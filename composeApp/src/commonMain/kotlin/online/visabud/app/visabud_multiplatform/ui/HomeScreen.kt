@@ -3,22 +3,45 @@ package online.visabud.app.visabud_multiplatform.ui
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Message
-import androidx.compose.material.icons.outlined.*
-import androidx.compose.material3.*
-import androidx.compose.runtime.*
+import androidx.compose.material.icons.outlined.Calculate
+import androidx.compose.material.icons.outlined.Flight
+import androidx.compose.material.icons.outlined.LocationOn
+import androidx.compose.material.icons.outlined.Map
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import org.jetbrains.compose.resources.painterResource
@@ -27,58 +50,28 @@ import visabud_multiplatform.composeapp.generated.resources.Res
 import visabud_multiplatform.composeapp.generated.resources.visabud_logo
 import visabud_multiplatform.composeapp.generated.resources.visabud_welcome_hero
 
-@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen() {
+fun HomeScreen(
+    paddingValues: PaddingValues
+) {
     val scrollState = rememberScrollState()
-    Scaffold(
-        topBar = { HomeHeader() },
-        floatingActionButton = {
-            FloatingActionButton(
-                onClick = { /* TODO: Handle FAB click */ },
-                containerColor = MaterialTheme.colorScheme.primary
-            ) {
-                Icon(Icons.Filled.Message, contentDescription = "New Chat")
-            }
-        },
-        bottomBar = { HomeBottomNavigation() }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-                .verticalScroll(scrollState)
-                .background(MaterialTheme.colorScheme.surfaceContainer)
-        ) {
-            HeroCard()
-            RecommendedTools()
-            CountrySpotlight()
-            RecentQueries()
-        }
-    }
-}
-
-@Composable
-private fun HomeBottomNavigation() {
-    var selectedItem by remember { mutableStateOf(0) }
-    val items = listOf("Home", "Tools", "Profile")
-    val icons = listOf(Icons.Outlined.Home, Icons.Outlined.Construction, Icons.Outlined.Person)
-
-    BottomAppBar {
-        items.forEachIndexed { index, item ->
-            NavigationBarItem(
-                selected = selectedItem == index,
-                onClick = { selectedItem = index },
-                icon = { Icon(icons[index], contentDescription = item) },
-                label = { Text(item) }
-            )
-        }
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues)
+            .verticalScroll(scrollState)
+            .background(MaterialTheme.colorScheme.surfaceContainer)
+    ) {
+        HeroCard()
+        RecommendedTools()
+        CountrySpotlight()
+        RecentQueries()
     }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun HomeHeader() {
+fun HomeHeader() {
     TopAppBar(
         title = {
             Image(
@@ -163,12 +156,20 @@ private fun RecommendedTools() {
             modifier = Modifier.padding(bottom = 12.dp)
         )
         Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceAround
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 4.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
-            QuickActionItem(Icons.Outlined.Calculate, "Cost Calculator")
-            QuickActionItem(Icons.Outlined.LocationOn, "Embassy Locator")
-            QuickActionItem(Icons.Outlined.Map, "Roadmap")
+            Box(modifier = Modifier.weight(1f)) {
+                QuickActionItem(Icons.Outlined.Calculate, "Cost Calculator")
+            }
+            Box(modifier = Modifier.weight(1f)) {
+                QuickActionItem(Icons.Outlined.LocationOn, "Embassy Locator")
+            }
+            Box(modifier = Modifier.weight(1f)) {
+                QuickActionItem(Icons.Outlined.Map, "Roadmap")
+            }
         }
     }
 }
@@ -176,20 +177,29 @@ private fun RecommendedTools() {
 @Composable
 private fun QuickActionItem(icon: ImageVector, label: String) {
     Card(
-        modifier = Modifier.padding(4.dp),
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.secondaryContainer
         )
     ) {
         Column(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 16.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
             Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.onSecondaryContainer)
             Spacer(Modifier.height(8.dp))
-            Text(label, style = MaterialTheme.typography.labelSmall, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSecondaryContainer)
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelSmall,
+                fontSize = 10.sp,
+                color = MaterialTheme.colorScheme.onSecondaryContainer,
+                textAlign = TextAlign.Center,
+                modifier = Modifier.padding(horizontal = 4.dp)
+            )
         }
     }
 }
@@ -271,7 +281,7 @@ private fun QueryItem(query: String) {
 @Preview
 @Composable
 private fun HomeScreenPreview() {
-    online.visabud.app.visabud_multiplatform.theme.VisabudTheme(darkTheme = false) {
-        HomeScreen()
+    online.visabud.app.visabud_multiplatform.theme.VisabudTheme {
+        HomeScreen(PaddingValues())
     }
 }

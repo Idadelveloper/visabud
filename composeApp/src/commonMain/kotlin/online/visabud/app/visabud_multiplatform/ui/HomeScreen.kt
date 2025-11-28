@@ -52,7 +52,8 @@ import visabud_multiplatform.composeapp.generated.resources.visabud_welcome_hero
 
 @Composable
 fun HomeScreen(
-    paddingValues: PaddingValues
+    paddingValues: PaddingValues,
+    onNavigateToChat: () -> Unit
 ) {
     val scrollState = rememberScrollState()
     Column(
@@ -62,7 +63,7 @@ fun HomeScreen(
             .verticalScroll(scrollState)
             .background(MaterialTheme.colorScheme.surfaceContainer)
     ) {
-        HeroCard()
+        HeroCard(onNavigateToChat)
         RecommendedTools()
         CountrySpotlight()
         RecentQueries()
@@ -98,7 +99,7 @@ fun HomeHeader() {
 }
 
 @Composable
-private fun HeroCard() {
+private fun HeroCard(onNavigateToChat: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -128,7 +129,7 @@ private fun HeroCard() {
                 )
                 Spacer(Modifier.height(16.dp))
                 Button(
-                    onClick = { /* TODO */ },
+                    onClick = onNavigateToChat,
                     colors = ButtonDefaults.buttonColors(
                         containerColor = MaterialTheme.colorScheme.primary
                     )
@@ -282,6 +283,6 @@ private fun QueryItem(query: String) {
 @Composable
 private fun HomeScreenPreview() {
     online.visabud.app.visabud_multiplatform.theme.VisabudTheme {
-        HomeScreen(PaddingValues())
+        HomeScreen(PaddingValues(), onNavigateToChat = {})
     }
 }

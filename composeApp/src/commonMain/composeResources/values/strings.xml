@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Multiplatform strings per Compose resources docs -->
+    <string name="click_me">Click me!</string>
+    <string name="compose_prefix">Compose:</string>
+    <!-- Example array and plural for future use -->
+    <string-array name="sample_array">
+        <item>First</item>
+        <item>Second</item>
+        <item>Third</item>
+    </string-array>
+    <plurals name="new_message">
+        <item quantity="one">%1$d new message</item>
+        <item quantity="other">%1$d new messages</item>
+    </plurals>
+</resources>

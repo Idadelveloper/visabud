@@ -12,7 +12,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Message
 import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -51,7 +51,7 @@ fun HomeScreen() {
                 .background(MaterialTheme.colorScheme.surfaceContainer)
         ) {
             HeroCard()
-            QuickActions()
+            RecommendedTools()
             CountrySpotlight()
             RecentQueries()
         }
@@ -60,25 +60,19 @@ fun HomeScreen() {
 
 @Composable
 private fun HomeBottomNavigation() {
+    var selectedItem by remember { mutableStateOf(0) }
+    val items = listOf("Home", "Tools", "Profile")
+    val icons = listOf(Icons.Outlined.Home, Icons.Outlined.Construction, Icons.Outlined.Person)
+
     BottomAppBar {
-        NavigationBarItem(
-            selected = true,
-            onClick = { /*TODO*/ },
-            icon = { Icon(Icons.Outlined.Home, contentDescription = "Home") },
-            label = { Text("Home") }
-        )
-        NavigationBarItem(
-            selected = false,
-            onClick = { /*TODO*/ },
-            icon = { Icon(Icons.Outlined.BookmarkBorder, contentDescription = "Saved") },
-            label = { Text("Saved") }
-        )
-        NavigationBarItem(
-            selected = false,
-            onClick = { /*TODO*/ },
-            icon = { Icon(Icons.Outlined.Person, contentDescription = "Profile") },
-            label = { Text("Profile") }
-        )
+        items.forEachIndexed { index, item ->
+            NavigationBarItem(
+                selected = selectedItem == index,
+                onClick = { selectedItem = index },
+                icon = { Icon(icons[index], contentDescription = item) },
+                label = { Text(item) }
+            )
+        }
     }
 }
 
@@ -161,21 +155,20 @@ private fun HeroCard() {
 }
 
 @Composable
-private fun QuickActions() {
+private fun RecommendedTools() {
     Column(modifier = Modifier.padding(horizontal = 16.dp)) {
         Text(
-            "Quick Actions",
+            "Recommended Tools",
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(bottom = 12.dp)
         )
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.SpaceBetween
+            horizontalArrangement = Arrangement.SpaceAround
         ) {
-            QuickActionItem(Icons.Outlined.Verified, "Visa Checker")
-            QuickActionItem(Icons.Outlined.Description, "Doc Review")
-            QuickActionItem(Icons.Outlined.Gavel, "Requirements")
-            QuickActionItem(Icons.Outlined.QuestionAnswer, "Interview Prep")
+            QuickActionItem(Icons.Outlined.Calculate, "Cost Calculator")
+            QuickActionItem(Icons.Outlined.LocationOn, "Embassy Locator")
+            QuickActionItem(Icons.Outlined.Map, "Roadmap")
         }
     }
 }

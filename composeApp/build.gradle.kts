@@ -41,6 +41,12 @@ kotlin {
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
+            // Cactus Kotlin SDK (Android)
+            implementation("com.cactuscompute:cactus:1.0.2-beta")
+        }
+        iosMain.dependencies {
+            // Cactus Kotlin SDK (iOS)
+            implementation("com.cactuscompute:cactus:1.0.2-beta")
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -88,6 +94,12 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
 }
+
+// Convenience iOS build aliases to avoid IDE CidrBuild path
+// Use: ./gradlew :composeApp:buildIosSim, :composeApp:buildIosDevice, or :composeApp:buildIosXCFramework
+tasks.register("buildIosSim") { dependsOn("linkDebugFrameworkIosSimulatorArm64") }
+tasks.register("buildIosDevice") { dependsOn("linkDebugFrameworkIosArm64") }
+tasks.register("buildIosXCFramework") { dependsOn("assembleXCFramework") }
 
 dependencies {
     debugImplementation(compose.uiTooling)

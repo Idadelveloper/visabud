@@ -4,5 +4,9 @@
     <dict>
         <key>CADisableMinimumFrameDurationOnPhone</key>
         <true/>
+        
+        <!-- Required for on-device speech transcription using Cactus (microphone access) -->
+        <key>NSMicrophoneUsageDescription</key>
+        <string>This app uses the microphone for on-device speech transcription to assist with visa guidance.</string>
     </dict>
 </plist>

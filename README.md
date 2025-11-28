@@ -72,8 +72,38 @@ in your IDE's toolbar or run it directly from the terminal:
 
 ### Build and Run iOS Application
 
-To build and run the development version of the iOS app, use the run configuration from the run widget
-in your IDE’s toolbar or open the [/iosApp](./iosApp) directory in Xcode and run it from there.
+Preferred workflow (avoids IDE CidrBuild toolchain):
+- Build iOS frameworks with Gradle
+  - Simulator (Apple Silicon):
+    ```shell
+    ./gradlew :composeApp:buildIosSim
+    # or
+    ./scripts/build-ios.sh
+    ```
+  - Device:
+    ```shell
+    ./gradlew :composeApp:buildIosDevice
+    # or
+    ./scripts/build-ios.sh device
+    ```
+  - Universal XCFramework:
+    ```shell
+    ./gradlew :composeApp:buildIosXCFramework
+    # or
+    ./scripts/build-ios.sh xcframework
+    ```
+- Open iosApp/iosApp.xcodeproj in Xcode and run on a simulator or device. Ensure it links the generated ComposeApp framework.
+
+If you prefer running from IDE run configs, ensure you use the Gradle tasks above. The built-in "Build" action that uses CidrBuild may fail with tooling-related exceptions in some setups.
+
+### Troubleshooting: java.lang.IllegalThreadStateException: process hasn't exited
+If you see this error when triggering an iOS build from the IDE:
+- Cause: This often comes from the IDE’s CidrBuild process trying to manage a native build process that hasn’t terminated yet.
+- Fix/Workaround:
+  - Use the Gradle tasks provided above (buildIosSim / buildIosDevice / buildIosXCFramework) instead of the IDE’s C/C++ toolchain build.
+  - Or use the helper script: `scripts/build-ios.sh`.
+  - Then run the app via Xcode using the generated framework, or keep using Gradle.
+- Still stuck? Share the exact action you triggered, IDE version, and the full stack trace.
 
 ---
 

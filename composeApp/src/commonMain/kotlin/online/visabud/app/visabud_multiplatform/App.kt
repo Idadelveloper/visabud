@@ -1,5 +1,6 @@
 package online.visabud.app.visabud_multiplatform
 
+import android.os.Parcelable
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Construction
 import androidx.compose.material.icons.outlined.Home
@@ -14,7 +15,7 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import online.visabud.app.visabud_multiplatform.theme.VisabudTheme
 import online.visabud.app.visabud_multiplatform.ui.HomeHeader
@@ -22,17 +23,30 @@ import online.visabud.app.visabud_multiplatform.ui.HomeScreen
 import online.visabud.app.visabud_multiplatform.ui.ToolsScreen
 import online.visabud.app.visabud_multiplatform.ui.WelcomeScreen
 import org.jetbrains.compose.ui.tooling.preview.Preview
+import kotlinx.parcelize.Parcelize
+
 
 @Composable
 @Preview
 fun App() {
     VisabudTheme {
-        var screen by remember { mutableStateOf<Screen>(Screen.Welcome) }
+        val initialScreen = if (AppSettings.hasBeenWelcomed) {
+            Screen.Main(MainScreen.Home)
+        } else {
+            Screen.Welcome
+        }
+        var screen by rememberSaveable { mutableStateOf(initialScreen) }
 
         when (val s = screen) {
             is Screen.Welcome -> WelcomeScreen(
-                onContinueAsGuest = { screen = Screen.Main(MainScreen.Home) },
-                onLoginSignup = { screen = Screen.Main(MainScreen.Home) }
+                onContinueAsGuest = {
+                    AppSettings.hasBeenWelcomed = true
+                    screen = Screen.Main(MainScreen.Home)
+                },
+                onLoginSignup = {
+                    AppSettings.hasBeenWelcomed = true
+                    screen = Screen.Main(MainScreen.Home)
+                }
             )
             is Screen.Main -> MainScreen(
                 initialScreen = s.startScreen,
@@ -45,7 +59,7 @@ fun App() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MainScreen(initialScreen: MainScreen, onNavigate: (MainScreen) -> Unit) {
-    var currentScreen by remember { mutableStateOf(initialScreen) }
+    var currentScreen by rememberSaveable { mutableStateOf(initialScreen) }
 
     Scaffold(
         topBar = {
@@ -79,12 +93,16 @@ private fun MainScreen(initialScreen: MainScreen, onNavigate: (MainScreen) -> Un
     }
 }
 
-private sealed class Screen {
+@Parcelize
+private sealed class Screen : Parcelable {
+    @Parcelize
     data object Welcome : Screen()
+    @Parcelize
     data class Main(val startScreen: MainScreen) : Screen()
 }
 
-private enum class MainScreen {
+@Parcelize
+private enum class MainScreen : Parcelable {
     Home,
     Tools,
     Profile

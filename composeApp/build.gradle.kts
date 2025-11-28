@@ -7,6 +7,7 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeMultiplatform)
     alias(libs.plugins.composeCompiler)
+    id("kotlin-parcelize")
 }
 
 kotlin {
@@ -62,6 +63,7 @@ kotlin {
             implementation("org.jetbrains.androidx.lifecycle:lifecycle-runtime-compose:2.9.6")
             implementation("org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose:2.9.6")
             implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.7.1")
+            implementation("com.russhwolf:multiplatform-settings-no-arg:1.1.1")
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

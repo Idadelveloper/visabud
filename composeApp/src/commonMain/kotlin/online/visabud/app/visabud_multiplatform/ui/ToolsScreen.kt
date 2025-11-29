@@ -11,7 +11,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowForwardIos
+import androidx.compose.material.icons.automirrored.filled.ArrowForwardIos
 import androidx.compose.material.icons.outlined.Calculate
 import androidx.compose.material.icons.outlined.Checklist
 import androidx.compose.material.icons.outlined.LocationOn
@@ -44,7 +44,7 @@ private val tools = listOf(
 )
 
 @Composable
-fun ToolsScreen(paddingValues: PaddingValues, onOpenDocumentReview: () -> Unit = {}, onOpenEmbassyLocator: () -> Unit = {}) {
+fun ToolsScreen(paddingValues: PaddingValues, onOpenDocumentReview: () -> Unit = {}, onOpenEmbassyLocator: () -> Unit = {}, onOpenCostCalculator: () -> Unit = {}) {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -56,6 +56,7 @@ fun ToolsScreen(paddingValues: PaddingValues, onOpenDocumentReview: () -> Unit =
             val click: (() -> Unit)? = when (tool.label) {
                 "Document Review" -> onOpenDocumentReview
                 "Embassy Locator" -> onOpenEmbassyLocator
+                "Cost Calculator" -> onOpenCostCalculator
                 else -> null
             }
             ToolListItem(
@@ -99,7 +100,7 @@ private fun ToolListItem(
             },
             trailingContent = {
                 Icon(
-                    imageVector = Icons.Default.ArrowForwardIos,
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForwardIos,
                     contentDescription = "Go",
                     modifier = Modifier.size(16.dp),
                     tint = MaterialTheme.colorScheme.onSurfaceVariant

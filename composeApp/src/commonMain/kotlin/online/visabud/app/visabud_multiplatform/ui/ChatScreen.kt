@@ -8,6 +8,7 @@ import androidx.compose.animation.core.RepeatMode
 import androidx.compose.animation.core.LinearEasing
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -33,6 +34,11 @@ import org.jetbrains.compose.ui.tooling.preview.Preview
 import online.visabud.app.visabud_multiplatform.ai.ChatMsg
 import online.visabud.app.visabud_multiplatform.ai.aiChatClient
 import online.visabud.app.visabud_multiplatform.ai.showToast
+import online.visabud.app.visabud_multiplatform.doc.documentPipeline
+import online.visabud.app.visabud_multiplatform.doc.mapToJson
+import online.visabud.app.visabud_multiplatform.data.DataModule
+import online.visabud.app.visabud_multiplatform.data.DocumentMeta
+import online.visabud.app.visabud_multiplatform.platform.rememberPlatformPickers
 
 private enum class Sender { USER, VISABUD }
 private data class ChatMessage(val text: String, val sender: Sender)
@@ -40,6 +46,9 @@ private data class ChatMessage(val text: String, val sender: Sender)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(paddingValues: PaddingValues) {
+    var showUploadDialog by remember { mutableStateOf(false) }
+    var uploadPath by remember { mutableStateOf("") }
+    var uploadVisa by remember { mutableStateOf("") }
     var message by remember { mutableStateOf("") }
     val messages = remember { mutableStateListOf<ChatMessage>() }
     var isVisaBudTyping by remember { mutableStateOf(false) }
@@ -55,6 +64,12 @@ fun ChatScreen(paddingValues: PaddingValues) {
     val client = remember { aiChatClient() }
 
     // Ensure model is ready on first open (no simulated messages)
+    // Platform pickers
+    val pickers = rememberPlatformPickers { picked ->
+        uploadPath = picked
+        showUploadDialog = true
+    }
+
     LaunchedEffect(Unit) {
         try {
             val alreadyDownloaded = client.isModelDownloaded()
@@ -138,7 +153,10 @@ fun ChatScreen(paddingValues: PaddingValues) {
                 onDismissRequest = { showBottomSheet = false },
                 sheetState = sheetState
             ) {
-                AttachmentOptions {
+                AttachmentOptions(
+                    onPickImage = { pickers.pickImage() },
+                    onPickFile = { pickers.pickFile() },
+                ) {
                     scope.launch { sheetState.hide() }.invokeOnCompletion {
                         if (!sheetState.isVisible) {
                             showBottomSheet = false
@@ -146,6 +164,78 @@ fun ChatScreen(paddingValues: PaddingValues) {
                     }
                 }
             }
+        }
+
+        // Simple upload dialog to paste a file path/URI and target visa
+        if (showUploadDialog) {
+            AlertDialog(
+                onDismissRequest = { showUploadDialog = false },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showUploadDialog = false
+                        // Trigger document pipeline and agentic review
+                        scope.launch {
+                            snackbarHostState.showSnackbar("Processing document…")
+                            try {
+                                val fields = documentPipeline().extractFields(uploadPath)
+                                // Persist
+                                val doc = online.visabud.app.visabud_multiplatform.data.DocumentMeta(
+                                    id = "doc_" + (uploadPath.hashCode().toString()),
+                                    type = "uploaded",
+                                    filename = uploadPath.substringAfterLast('/').ifBlank { uploadPath },
+                                    parsedFieldsJson = mapToJson(fields),
+                                    uploadedAt = 0L,
+                                    encryptedPath = uploadPath
+                                )
+                                DataModule.documents.add(doc)
+                                // Add a user message informing the agent
+                                val userNote = buildString {
+                                    append("I uploaded a document for ")
+                                    append(uploadVisa.ifBlank { "review" })
+                                    append(". Please review it.")
+                                    if (fields.isNotEmpty()) {
+                                        append(" Document fields: ")
+                                        append(mapToJson(fields))
+                                    }
+                                }
+                                messages.add(ChatMessage(userNote, Sender.USER))
+                                isVisaBudTyping = true
+                                // Send with current history so the model can decide to call tools
+                                val history: List<ChatMsg> = messages.map {
+                                    val role = if (it.sender == Sender.USER) "user" else "assistant"
+                                    ChatMsg(content = it.text, role = role)
+                                }
+                                val reply = client.send(history)
+                                messages.add(ChatMessage(reply, Sender.VISABUD))
+                                snackbarHostState.showSnackbar("Document processed.")
+                            } catch (e: Throwable) {
+                                snackbarHostState.showSnackbar("Upload failed: ${e.message ?: "unknown"}")
+                            } finally {
+                                isVisaBudTyping = false
+                                uploadPath = ""; uploadVisa = ""
+                            }
+                        }
+                    }) { Text("Send for Review") }
+                },
+                dismissButton = { TextButton(onClick = { showUploadDialog = false }) { Text("Cancel") } },
+                title = { Text("Upload Document") },
+                text = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        OutlinedTextField(
+                            value = uploadPath,
+                            onValueChange = { uploadPath = it },
+                            label = { Text("File path or URI") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                        OutlinedTextField(
+                            value = uploadVisa,
+                            onValueChange = { uploadVisa = it },
+                            label = { Text("Target visa (e.g., UK Visitor)") },
+                            modifier = Modifier.fillMaxWidth()
+                        )
+                    }
+                }
+            )
         }
     }
 }
@@ -270,22 +360,30 @@ private fun ChatInputBar(
 }
 
 @Composable
-private fun AttachmentOptions(onOptionSelected: () -> Unit) {
+private fun AttachmentOptions(
+    onPickImage: () -> Unit,
+    onPickFile: () -> Unit,
+    onOptionSelected: () -> Unit = {}
+) {
     Column(modifier = Modifier.padding(bottom = 32.dp)) {
         AttachmentOptionItem(
             icon = Icons.Outlined.Image,
             label = "Image",
-            onClick = onOptionSelected // TODO: Implement image picking
+            onClick = {
+                onPickImage(); onOptionSelected()
+            }
         )
         AttachmentOptionItem(
             icon = Icons.Outlined.Mic,
             label = "Audio",
-            onClick = onOptionSelected // TODO: Implement audio recording
+            onClick = onOptionSelected // Placeholder for future voice input
         )
         AttachmentOptionItem(
             icon = Icons.Outlined.AttachFile,
             label = "File",
-            onClick = onOptionSelected // TODO: Implement file picking
+            onClick = {
+                onPickFile(); onOptionSelected()
+            }
         )
     }
 }
@@ -296,7 +394,9 @@ private fun AttachmentOptionItem(icon: ImageVector, label: String, onClick: () -
     ListItem(
         headlineContent = { Text(label) },
         leadingContent = { Icon(icon, contentDescription = label) },
-        modifier = Modifier.padding(horizontal = 16.dp)
+        modifier = Modifier
+            .padding(horizontal = 16.dp)
+            .clickable { onClick() }
     )
 }
 

@@ -1,5 +1,6 @@
 package online.visabud.app.visabud_multiplatform.ui
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
@@ -43,7 +44,7 @@ private val tools = listOf(
 )
 
 @Composable
-fun ToolsScreen(paddingValues: PaddingValues) {
+fun ToolsScreen(paddingValues: PaddingValues, onOpenDocumentReview: () -> Unit = {}) {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -52,11 +53,13 @@ fun ToolsScreen(paddingValues: PaddingValues) {
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items(tools) { tool ->
+            val click: (() -> Unit)? = if (tool.label == "Document Review") onOpenDocumentReview else null
             ToolListItem(
                 icon = tool.icon,
                 title = tool.label,
                 subtitle = tool.subtitle,
-                modifier = Modifier.padding(horizontal = 16.dp)
+                modifier = Modifier.padding(horizontal = 16.dp),
+                onClick = click
             )
         }
     }
@@ -68,10 +71,13 @@ private fun ToolListItem(
     icon: ImageVector,
     title: String,
     subtitle: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
 ) {
     Card(
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier
+            .fillMaxWidth()
+            .let { if (onClick != null) it.clickable { onClick() } else it },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.surfaceVariant
@@ -95,8 +101,9 @@ private fun ToolListItem(
                     tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             },
-            colors = ListItemDefaults.colors(containerColor = Color.Transparent)
-        )
+            colors = ListItemDefaults.colors(containerColor = Color.Transparent),
+            modifier = Modifier.then(if (onClick != null) Modifier.padding(0.dp) else Modifier),
+            )
     }
 }
 

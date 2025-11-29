@@ -1,6 +1,6 @@
 package online.visabud.app.visabud_multiplatform
 
-import android.os.Parcelable
+// import android.os.Parcelable (removed for KMP common)
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Message
@@ -20,14 +20,15 @@ import androidx.compose.material3.TopAppBar
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
-import kotlinx.parcelize.Parcelize
+// removed parcelize import for KMP common
 import online.visabud.app.visabud_multiplatform.theme.VisabudTheme
 import online.visabud.app.visabud_multiplatform.ui.ChatScreen
 import online.visabud.app.visabud_multiplatform.ui.HomeHeader
 import online.visabud.app.visabud_multiplatform.ui.HomeScreen
 import online.visabud.app.visabud_multiplatform.ui.ToolsScreen
+import online.visabud.app.visabud_multiplatform.ui.DocumentReviewScreen
 import online.visabud.app.visabud_multiplatform.ui.WelcomeScreen
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
@@ -41,7 +42,7 @@ fun App() {
         } else {
             Screen.Welcome
         }
-        var screen by rememberSaveable { mutableStateOf(initialScreen) }
+        var screen by remember { mutableStateOf(initialScreen) }
 
         when (val s = screen) {
             is Screen.Welcome -> WelcomeScreen(
@@ -65,7 +66,7 @@ fun App() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 private fun MainScreen(initialScreen: MainScreen, onNavigate: (MainScreen) -> Unit) {
-    var currentScreen by rememberSaveable { mutableStateOf(initialScreen) }
+    var currentScreen by remember { mutableStateOf(initialScreen) }
 
     Scaffold(
         topBar = {
@@ -73,6 +74,7 @@ private fun MainScreen(initialScreen: MainScreen, onNavigate: (MainScreen) -> Un
                 MainScreen.Home -> HomeHeader()
                 MainScreen.Tools -> TopAppBar(title = { Text("Tools") })
                 MainScreen.Profile -> TopAppBar(title = { Text("Profile") })
+                MainScreen.DocumentReview -> TopAppBar(title = { Text("Document Review") })
                 MainScreen.Chat -> TopAppBar(
                     title = { Text("VisaBud Chat") },
                     navigationIcon = {
@@ -116,26 +118,24 @@ private fun MainScreen(initialScreen: MainScreen, onNavigate: (MainScreen) -> Un
             MainScreen.Home -> HomeScreen(
                 paddingValues,
                 onNavigateToChat = { currentScreen = MainScreen.Chat })
-            MainScreen.Tools -> ToolsScreen(paddingValues)
+            MainScreen.Tools -> ToolsScreen(paddingValues, onOpenDocumentReview = { currentScreen = MainScreen.DocumentReview })
             MainScreen.Profile -> { /* TODO: Profile Screen */
             }
             MainScreen.Chat -> ChatScreen(paddingValues)
+            MainScreen.DocumentReview -> DocumentReviewScreen(paddingValues)
         }
     }
 }
 
-@Parcelize
-private sealed class Screen : Parcelable {
-    @Parcelize
+private sealed class Screen {
     data object Welcome : Screen()
-    @Parcelize
     data class Main(val startScreen: MainScreen) : Screen()
 }
 
-@Parcelize
-private enum class MainScreen : Parcelable {
+private enum class MainScreen {
     Home,
     Tools,
     Profile,
-    Chat
+    Chat,
+    DocumentReview
 }

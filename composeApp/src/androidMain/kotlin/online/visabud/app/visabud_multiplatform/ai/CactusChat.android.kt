@@ -10,6 +10,48 @@ import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
 private class CactusAiChatClient : AiChatClient {
+    private fun safeParseFlatJson(json: String): Map<String, String> {
+        val trimmed = json.trim().removePrefix("```").removeSuffix("```").trim()
+        if (!trimmed.startsWith("{") || !trimmed.endsWith("}")) return emptyMap()
+        val body = trimmed.substring(1, trimmed.length - 1)
+        if (body.isBlank()) return emptyMap()
+        val result = LinkedHashMap<String, String>()
+        val parts = splitTopLevelCommas(body)
+        for (p in parts) {
+            val kv = p.split(":", limit = 2)
+            if (kv.size == 2) {
+                val key = kv[0].trim().trim('"')
+                var value = kv[1].trim().trim(',').trim()
+                if (value.startsWith('"') && value.endsWith('"') && value.length >= 2) {
+                    value = value.substring(1, value.length - 1)
+                }
+                result[key] = value
+            }
+        }
+        return result
+    }
+
+    private fun splitTopLevelCommas(s: String): List<String> {
+        val parts = mutableListOf<String>()
+        val sb = StringBuilder()
+        var inQuotes = false
+        var i = 0
+        while (i < s.length) {
+            val c = s[i]
+            if (c == '"') {
+                inQuotes = !inQuotes
+                sb.append(c)
+            } else if (c == ',' && !inQuotes) {
+                parts.add(sb.toString())
+                sb.clear()
+            } else {
+                sb.append(c)
+            }
+            i++
+        }
+        if (sb.isNotEmpty()) parts.add(sb.toString())
+        return parts
+    }
     private val lm: CactusLM by lazy { CactusLM(enableToolFiltering = false) }
     private val initMutex = Mutex()
     private var initialized = false
@@ -136,7 +178,7 @@ private class CactusAiChatClient : AiChatClient {
             addAll(messages.map { com.cactus.ChatMessage(it.content, it.role) })
         }
 
-        // Define function-calling tool for structured roadmaps
+        // Define function-calling tools
         val tools = listOf(
             createTool(
                 name = "produce_roadmap",
@@ -146,6 +188,15 @@ private class CactusAiChatClient : AiChatClient {
                     "target_country" to ToolParameter(type = "string", description = "Destination country", required = true),
                     "purpose" to ToolParameter(type = "string", description = "Purpose e.g., student, work, visit", required = true),
                     "steps" to ToolParameter(type = "array", description = "Optional custom steps array if applicable", required = false)
+                )
+            ),
+            createTool(
+                name = "review_document",
+                description = "Review a user's uploaded document for a target visa and return structured JSON feedback.",
+                parameters = mapOf(
+                    "targetVisa" to ToolParameter(type = "string", description = "Target visa label (e.g., 'UK Visitor')", required = true),
+                    "documentJson" to ToolParameter(type = "string", description = "Flat JSON of parsed fields {\"field\":\"value\"}", required = true),
+                    "imagePath" to ToolParameter(type = "string", description = "Optional file path or URI of the document image", required = false)
                 )
             )
         )
@@ -164,11 +215,31 @@ private class CactusAiChatClient : AiChatClient {
         }
         val base = result.response.orEmpty()
         val sources = VisaFactsRag.buildSourcesBlock(retrievedFacts)
-        val toolJson = result.toolCalls?.joinToString("\n") { tc ->
-            "Tool: ${tc.name}\nArgs: ${tc.arguments}"
-        }.orEmpty()
+
+        // Execute tool calls agentically (single-step)
+        val toolOutputs = StringBuilder()
+        result.toolCalls?.forEach { tc ->
+            when (tc.name) {
+                "produce_roadmap" -> {
+                    toolOutputs.append("\n\nRoadmap (JSON):\n")
+                    toolOutputs.append(tc.arguments.toString())
+                }
+                "review_document" -> {
+                    try {
+                        val targetVisaArg = tc.arguments["targetVisa"] ?: ""
+                        val docJson = tc.arguments["documentJson"] ?: "{}"
+                        val parsed = safeParseFlatJson(docJson)
+                        val review = online.visabud.app.visabud_multiplatform.doc.documentPipeline().reviewDocument(parsed, targetVisaArg)
+                        toolOutputs.append("\n\nDocument Review (JSON):\n")
+                        toolOutputs.append(review)
+                    } catch (e: Throwable) {
+                        toolOutputs.append("\n\n[review_document failed: ${e.message}]")
+                    }
+                }
+            }
+        }
         val withSources = if (sources.isBlank()) base else base + "\n\nSources:\n" + sources
-        return if (toolJson.isBlank()) withSources else withSources + "\n\nRoadmap (JSON):\n" + toolJson
+        return withSources + toolOutputs.toString()
     }
 
     override suspend fun isModelDownloaded(): Boolean {

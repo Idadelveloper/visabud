@@ -11,32 +11,25 @@ import online.visabud.app.visabud_multiplatform.ai.PromptTemplates
 import online.visabud.app.visabud_multiplatform.ai.VisaFactsRag
 
 private class AndroidDocumentPipeline : DocumentPipeline {
-    private val lm: CactusLM by lazy { CactusLM() }
+    private val lm get() = online.visabud.app.visabud_multiplatform.ai.CactusLmHolder.instance()
     private val initMutex = Mutex()
     private var initialized = false
     private var modelSlug: String = "local-qwen3-0.6"
 
     private suspend fun ensureReady(contextSize: Int = 2048) = initMutex.withLock {
-        if (initialized && lm.isLoaded()) return
-        // Prefer a local vision-capable model if available
+        if (initialized && online.visabud.app.visabud_multiplatform.ai.CactusLmHolder.isLoaded()) return
+        // Prefer a local vision-capable model if available (one-time check)
         try {
-            val models = lm.getModels()
+            val models = online.visabud.app.visabud_multiplatform.ai.CactusLmHolder.withLm { it.getModels() }
             val vision = models.firstOrNull { it.supports_vision && it.slug.startsWith("local-") }
             if (vision != null) modelSlug = vision.slug
         } catch (_: Throwable) {}
-        // Download only if necessary
-        try {
-            val models = lm.getModels()
-            val have = models.any { it.slug == modelSlug && it.isDownloaded }
-            if (!have) lm.downloadModel(modelSlug)
-        } catch (_: Throwable) {
-            // try to proceed; initialize may still work if cached
-        }
-        lm.initializeModel(CactusInitParams(model = modelSlug, contextSize = contextSize))
+        // Ensure the shared LM is initialized for the chosen model
+        online.visabud.app.visabud_multiplatform.ai.CactusLmHolder.ensureReady(contextSize = contextSize, model = modelSlug)
         // Ensure RAG store populated (non-fatal)
         try {
             VisaFactsRag.ensurePersisted { text ->
-                val emb = lm.generateEmbedding(text)
+                val emb = online.visabud.app.visabud_multiplatform.ai.CactusLmHolder.withLm { it.generateEmbedding(text) }
                 if (emb == null || !emb.success) emptyList() else emb.embeddings
             }
         } catch (_: Throwable) { }
@@ -47,16 +40,17 @@ private class AndroidDocumentPipeline : DocumentPipeline {
         ensureReady()
         // First attempt: vision extraction if model supports images
         val useImages = try {
-            val models = lm.getModels(); models.firstOrNull { it.slug == modelSlug }?.supports_vision == true
+            val models = online.visabud.app.visabud_multiplatform.ai.CactusLmHolder.withLm { it.getModels() }
+            models.firstOrNull { it.slug == modelSlug }?.supports_vision == true
         } catch (_: Throwable) { false }
 
         val sys = "You are a vision OCR assistant. Extract structured fields from the provided document image. Return JSON only with keys: passportNumber, expiryDate, name, dob. If uncertain, leave values empty."
         val user = if (useImages) ChatMessage("Extract fields from this passport document image.", "user", images = listOf(imagePath)) else ChatMessage("No image support available. If possible, infer nothing and return empty fields.", "user")
 
-        val result = lm.generateCompletion(
+        val result = online.visabud.app.visabud_multiplatform.ai.CactusLmHolder.withLm { it.generateCompletion(
             messages = listOf(ChatMessage(sys, "system"), user),
             params = CactusCompletionParams(model = modelSlug, temperature = 0.0, maxTokens = 200, mode = InferenceMode.LOCAL)
-        )
+        ) }
         val json = result?.response?.trim().orEmpty()
         // Very lightweight JSON parse into Map<String,String>; tolerate non-JSON by returning empty map
         return try {

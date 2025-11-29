@@ -52,27 +52,20 @@ private class CactusAiChatClient : AiChatClient {
         if (sb.isNotEmpty()) parts.add(sb.toString())
         return parts
     }
-    private val lm: CactusLM by lazy { CactusLM(enableToolFiltering = false) }
+    private val lm get() = CactusLmHolder.instance()
     private val initMutex = Mutex()
     private var initialized = false
     private val modelSlug = "local-qwen3-0.6"
 
+    private suspend fun <T> withLM(block: suspend (CactusLM) -> T): T = CactusLmHolder.withLm { lm -> block(lm) }
+
     override suspend fun ensureReady(contextSize: Int): Unit = initMutex.withLock {
-        if (initialized && lm.isLoaded()) return
-        // Only download if not already present
-        if (!isModelDownloaded()) {
-            lm.downloadModel(modelSlug)
-        }
-        lm.initializeModel(
-            CactusInitParams(
-                model = modelSlug,
-                contextSize = contextSize
-            )
-        )
+        if (initialized && CactusLmHolder.isLoaded()) return
+        CactusLmHolder.ensureReady(contextSize = contextSize, model = modelSlug)
         // Precompute and persist RAG embeddings for visa facts using model's embedding endpoint
         try {
             VisaFactsRag.ensurePersisted { text ->
-                val emb = lm.generateEmbedding(text)
+                val emb = withLM { it.generateEmbedding(text) }
                 if (emb == null || !emb.success) emptyList() else emb.embeddings
             }
         } catch (_: Throwable) {
@@ -118,7 +111,14 @@ private class CactusAiChatClient : AiChatClient {
                     tools = emptyList()
                 )
             } else if (isDocReview) {
-                sysMsg = PromptTemplates.documentReviewSystem()
+                // Retrieve facts to ground document review
+                val facts = try {
+                    VisaFactsRag.retrieveFromRepo(payload.ifBlank { latestUser }, embedder = { q ->
+                        val emb = lm.generateEmbedding(q)
+                        if (emb == null || !emb.success) emptyList() else emb.embeddings
+                    }, topK = 6)
+                } catch (_: Throwable) { emptyList() }
+                sysMsg = PromptTemplates.documentReviewSystem() + "\n" + (VisaFactsRag.buildSystemPreamble(facts) ?: "")
                 msgList = listOf(
                     com.cactus.ChatMessage(sysMsg, "system"),
                     com.cactus.ChatMessage(userMsg, "user")
@@ -147,7 +147,7 @@ private class CactusAiChatClient : AiChatClient {
                 )
             }
 
-            val result = lm.generateCompletion(messages = msgList, params = params)
+            val result = withLM { it.generateCompletion(messages = msgList, params = params) }
             if (result == null || !result.success) {
                 throw IllegalStateException(result?.response ?: "Cactus completion failed")
             }
@@ -164,7 +164,7 @@ private class CactusAiChatClient : AiChatClient {
         val systemPreamble: String? = try {
             if (userQuery != null) {
                 retrievedFacts = VisaFactsRag.retrieveFromRepo(userQuery, embedder = { q ->
-                    val emb = lm.generateEmbedding(q)
+                    val emb = withLM { it.generateEmbedding(q) }
                     if (emb == null || !emb.success) emptyList() else emb.embeddings
                 }, topK = 6)
                 VisaFactsRag.buildSystemPreamble(retrievedFacts)
@@ -201,7 +201,7 @@ private class CactusAiChatClient : AiChatClient {
             )
         )
 
-        val result = lm.generateCompletion(
+        val result = withLM { it.generateCompletion(
             messages = allMessages,
             params = CactusCompletionParams(
                 model = modelSlug,
@@ -209,7 +209,7 @@ private class CactusAiChatClient : AiChatClient {
                 mode = InferenceMode.LOCAL,
                 tools = tools
             )
-        )
+        ) }
         if (result == null || !result.success) {
             throw IllegalStateException(result?.response ?: "Cactus completion failed")
         }
@@ -244,15 +244,107 @@ private class CactusAiChatClient : AiChatClient {
 
     override suspend fun isModelDownloaded(): Boolean {
         return try {
-            val models = lm.getModels()
+            val models = withLM { it.getModels() }
             models.any { it.slug == modelSlug && it.isDownloaded }
         } catch (e: Exception) {
             false
         }
     }
 
+    override suspend fun sendStreaming(
+        messages: List<ChatMsg>,
+        temperature: Double?,
+        onToken: (String) -> Unit
+    ): String {
+        // If structured command prefixes are used, fall back to non-streaming for strict JSON
+        val latestUser = messages.lastOrNull { it.role == "user" }?.content?.trim() ?: ""
+        val lower = latestUser.lowercase()
+        val isStructured = lower.startsWith("roadmap_json:") || lower.startsWith("doc_review:") || lower.startsWith("interview_practice:")
+        if (isStructured) {
+            val full = send(messages, temperature)
+            onToken(full)
+            return full
+        }
+
+        // Default chat with RAG grounding + tools, streamed tokens
+        var retrievedFacts: List<VisaFactsRag.RetrievedFact> = emptyList()
+        val userQuery = latestUser.ifBlank { messages.lastOrNull()?.content ?: "" }
+        val systemPreamble: String? = try {
+            retrievedFacts = VisaFactsRag.retrieveFromRepo(userQuery, embedder = { q ->
+                val emb = lm.generateEmbedding(q)
+                if (emb == null || !emb.success) emptyList() else emb.embeddings
+            }, topK = 6)
+            VisaFactsRag.buildSystemPreamble(retrievedFacts)
+        } catch (_: Throwable) { null }
+
+        val allMessages = buildList {
+            if (systemPreamble != null) add(com.cactus.ChatMessage(systemPreamble, "system"))
+            addAll(messages.map { com.cactus.ChatMessage(it.content, it.role) })
+        }
+        val sb = StringBuilder()
+        val result = lm.generateCompletion(
+            messages = allMessages,
+            params = CactusCompletionParams(
+                model = modelSlug,
+                temperature = temperature,
+                mode = InferenceMode.LOCAL,
+                tools = listOf(
+                    createTool(
+                        name = "produce_roadmap",
+                        description = "Produce a JSON roadmap for achieving a specific visa or immigration outcome.",
+                        parameters = mapOf(
+                            "origin_country" to ToolParameter(type = "string", description = "User's current or passport country", required = false),
+                            "target_country" to ToolParameter(type = "string", description = "Destination country", required = true),
+                            "purpose" to ToolParameter(type = "string", description = "Purpose e.g., student, work, visit", required = true)
+                        )
+                    ),
+                    createTool(
+                        name = "review_document",
+                        description = "Review a user's uploaded document for a target visa and return structured JSON feedback.",
+                        parameters = mapOf(
+                            "targetVisa" to ToolParameter(type = "string", description = "Target visa label (e.g., 'UK Visitor')", required = true),
+                            "documentJson" to ToolParameter(type = "string", description = "Flat JSON of parsed fields {\"field\":\"value\"}", required = true)
+                        )
+                    )
+                )
+            ),
+            onToken = { token, _ ->
+                sb.append(token)
+                onToken(token)
+            }
+        )
+        val base = sb.toString().ifBlank { result?.response.orEmpty() }
+        val sources = VisaFactsRag.buildSourcesBlock(retrievedFacts)
+        // Emit sources and any tool outputs (if any) after stream ends
+        val tail = StringBuilder()
+        if (sources.isNotBlank()) {
+            tail.append("\n\nSources:\n").append(sources)
+        }
+        result?.toolCalls?.forEach { tc ->
+            when (tc.name) {
+                "produce_roadmap" -> {
+                    tail.append("\n\nRoadmap (JSON):\n").append(tc.arguments.toString())
+                }
+                "review_document" -> {
+                    try {
+                        val targetVisaArg = tc.arguments["targetVisa"] ?: ""
+                        val docJson = tc.arguments["documentJson"] ?: "{}"
+                        val parsed = safeParseFlatJson(docJson)
+                        val review = online.visabud.app.visabud_multiplatform.doc.documentPipeline().reviewDocument(parsed, targetVisaArg)
+                        tail.append("\n\nDocument Review (JSON):\n").append(review)
+                    } catch (e: Throwable) {
+                        tail.append("\n\n[review_document failed: ").append(e.message).append("]")
+                    }
+                }
+            }
+        }
+        val finalText = base + tail.toString()
+        if (tail.isNotEmpty()) onToken(tail.toString())
+        return finalText
+    }
+
     override fun unload() {
-        lm.unload()
+        // Shared LM managed by CactusLmHolder; avoid unloading to prevent native races
         initialized = false
     }
 }

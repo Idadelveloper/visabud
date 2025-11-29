@@ -102,7 +102,13 @@ private class CactusAiChatClientIOS : AiChatClient {
                     tools = emptyList()
                 )
             } else if (isDocReview) {
-                sysMsg = PromptTemplates.documentReviewSystem()
+                val facts = try {
+                    VisaFactsRag.retrieveFromRepo(payload.ifBlank { latestUser }, embedder = { q ->
+                        val emb = lm.generateEmbedding(q)
+                        if (emb == null || !emb.success) emptyList() else emb.embeddings
+                    }, topK = 6)
+                } catch (_: Throwable) { emptyList() }
+                sysMsg = PromptTemplates.documentReviewSystem() + "\n" + (VisaFactsRag.buildSystemPreamble(facts) ?: "")
                 msgList = listOf(
                     com.cactus.ChatMessage(sysMsg, "system"),
                     com.cactus.ChatMessage(userMsg, "user")
@@ -230,6 +236,89 @@ private class CactusAiChatClientIOS : AiChatClient {
         } catch (e: Exception) {
             false
         }
+    }
+
+    override suspend fun sendStreaming(
+        messages: List<ChatMsg>,
+        temperature: Double?,
+        onToken: (String) -> Unit
+    ): String {
+        val latestUser = messages.lastOrNull { it.role == "user" }?.content?.trim() ?: ""
+        val lower = latestUser.lowercase()
+        val isStructured = lower.startsWith("roadmap_json:") || lower.startsWith("doc_review:") || lower.startsWith("interview_practice:")
+        if (isStructured) {
+            val full = send(messages, temperature)
+            onToken(full)
+            return full
+        }
+        var retrievedFacts: List<VisaFactsRag.RetrievedFact> = emptyList()
+        val userQuery = latestUser.ifBlank { messages.lastOrNull()?.content ?: "" }
+        val systemPreamble: String? = try {
+            retrievedFacts = VisaFactsRag.retrieveFromRepo(userQuery, embedder = { q ->
+                val emb = lm.generateEmbedding(q)
+                if (emb == null || !emb.success) emptyList() else emb.embeddings
+            }, topK = 6)
+            VisaFactsRag.buildSystemPreamble(retrievedFacts)
+        } catch (_: Throwable) { null }
+        val allMessages = buildList {
+            if (systemPreamble != null) add(com.cactus.ChatMessage(systemPreamble, "system"))
+            addAll(messages.map { com.cactus.ChatMessage(it.content, it.role) })
+        }
+        val sb = StringBuilder()
+        val result = lm.generateCompletion(
+            messages = allMessages,
+            params = CactusCompletionParams(
+                model = modelSlug,
+                temperature = temperature,
+                mode = InferenceMode.LOCAL,
+                tools = listOf(
+                    createTool(
+                        name = "produce_roadmap",
+                        description = "Produce a JSON roadmap for achieving a specific visa or immigration outcome.",
+                        parameters = mapOf(
+                            "origin_country" to com.cactus.models.ToolParameter(type = "string", description = "User's current or passport country", required = false),
+                            "target_country" to com.cactus.models.ToolParameter(type = "string", description = "Destination country", required = true),
+                            "purpose" to com.cactus.models.ToolParameter(type = "string", description = "Purpose e.g., student, work, visit", required = true)
+                        )
+                    ),
+                    createTool(
+                        name = "review_document",
+                        description = "Review a user's uploaded document for a target visa and return structured JSON feedback.",
+                        parameters = mapOf(
+                            "targetVisa" to com.cactus.models.ToolParameter(type = "string", description = "Target visa label (e.g., 'UK Visitor')", required = true),
+                            "documentJson" to com.cactus.models.ToolParameter(type = "string", description = "Flat JSON of parsed fields {\"field\":\"value\"}", required = true)
+                        )
+                    )
+                )
+            ),
+            onToken = { token, _ ->
+                sb.append(token)
+                onToken(token)
+            }
+        )
+        val base = sb.toString().ifBlank { result?.response.orEmpty() }
+        val sources = VisaFactsRag.buildSourcesBlock(retrievedFacts)
+        val tail = StringBuilder()
+        if (sources.isNotBlank()) tail.append("\n\nSources:\n").append(sources)
+        result?.toolCalls?.forEach { tc ->
+            when (tc.name) {
+                "produce_roadmap" -> tail.append("\n\nRoadmap (JSON):\n").append(tc.arguments.toString())
+                "review_document" -> {
+                    try {
+                        val targetVisaArg = tc.arguments["targetVisa"] ?: ""
+                        val docJson = tc.arguments["documentJson"] ?: "{}"
+                        val parsed = iosSafeParseFlatJson(docJson)
+                        val review = online.visabud.app.visabud_multiplatform.doc.documentPipeline().reviewDocument(parsed, targetVisaArg)
+                        tail.append("\n\nDocument Review (JSON):\n").append(review)
+                    } catch (e: Throwable) {
+                        tail.append("\n\n[review_document failed: ").append(e.message).append("]")
+                    }
+                }
+            }
+        }
+        val finalText = base + tail.toString()
+        if (tail.isNotEmpty()) onToken(tail.toString())
+        return finalText
     }
 
     override fun unload() {

@@ -111,8 +111,20 @@ fun ChatScreen(paddingValues: PaddingValues) {
                                 val role = if (it.sender == Sender.USER) "user" else "assistant"
                                 ChatMsg(content = it.text, role = role)
                             }
-                            val reply = client.send(history)
-                            messages.add(ChatMessage(reply, Sender.VISABUD))
+                            // Streaming assistant reply
+                            val placeholderIndex = messages.size
+                            messages.add(ChatMessage(text = "", sender = Sender.VISABUD))
+                            val finalText = client.sendStreaming(history) { token ->
+                                // append token to the last assistant message
+                                if (messages.size > placeholderIndex) {
+                                    val current = messages[placeholderIndex]
+                                    messages[placeholderIndex] = current.copy(text = current.text + token)
+                                }
+                            }
+                            // Ensure final text is set (in case no streaming tokens were emitted)
+                            if (messages[placeholderIndex].text.isBlank()) {
+                                messages[placeholderIndex] = messages[placeholderIndex].copy(text = finalText)
+                            }
                         } catch (e: Throwable) {
                             snackbarHostState.showSnackbar("Chat failed: ${e.message ?: "unknown error"}")
                         } finally {
@@ -215,8 +227,18 @@ fun ChatScreen(paddingValues: PaddingValues) {
                                     val role = if (it.sender == Sender.USER) "user" else "assistant"
                                     ChatMsg(content = it.text, role = role)
                                 }
-                                val reply = client.send(history)
-                                messages.add(ChatMessage(reply, Sender.VISABUD))
+                                // Stream the assistant reply after upload
+                                val placeholder = messages.size
+                                messages.add(ChatMessage(text = "", sender = Sender.VISABUD))
+                                val finalText = client.sendStreaming(history) { token ->
+                                    if (messages.size > placeholder) {
+                                        val current = messages[placeholder]
+                                        messages[placeholder] = current.copy(text = current.text + token)
+                                    }
+                                }
+                                if (messages[placeholder].text.isBlank()) {
+                                    messages[placeholder] = messages[placeholder].copy(text = finalText)
+                                }
                                 snackbarHostState.showSnackbar("Document processed.")
                             } catch (e: Throwable) {
                                 snackbarHostState.showSnackbar("Upload failed: ${e.message ?: "unknown"}")
@@ -275,10 +297,14 @@ private fun MessageBubble(message: ChatMessage) {
             shape = RoundedCornerShape(16.dp),
             colors = colors
         ) {
-            Text(
-                text = message.text,
-                modifier = Modifier.padding(12.dp)
-            )
+            if (!isUser) {
+                AssistantStructuredContent(message.text)
+            } else {
+                Text(
+                    text = message.text,
+                    modifier = Modifier.padding(12.dp)
+                )
+            }
         }
     }
 }
@@ -416,4 +442,13 @@ private fun ChatScreenPreview() {
     online.visabud.app.visabud_multiplatform.theme.VisabudTheme {
         ChatScreen(PaddingValues())
     }
+}
+
+
+@Composable
+private fun AssistantStructuredContent(text: String) {
+    // Minimal structured content renderer for assistant messages.
+    // For now, just display the text with padding. Can be enhanced to render
+    // JSON blocks and Sources sections with better formatting.
+    Text(text = text, modifier = Modifier.padding(12.dp))
 }

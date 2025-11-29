@@ -1,0 +1,112 @@
+[
+  {
+    "code": "US",
+    "country": "United States",
+    "official_site": "https://www.uscis.gov/visit-the-us",
+    "facts": [
+      "Most short visits require a B-1/B-2 (visitor) visa unless you are visa-exempt via Visa Waiver Program (country-dependent).",
+      "Applicants frequently must show intent to return to home country, proof of funds, and purpose of visit.",
+      "Biometrics (fingerprints/photo) and an in-person interview may be required for many nonimmigrant visas.",
+      "Immigrant (green card) paths are numerous (family-sponsored, employment-based); each has category-specific requirements and priority processing rules."
+    ]
+  },
+  {
+    "code": "UK",
+    "country": "United Kingdom",
+    "official_site": "https://www.gov.uk/standard-visitor",
+    "facts": [
+      "Standard Visitor visa covers tourism, business, short study (courses up to 6 months) and usually allows stays up to 6 months.",
+      "You must hold a passport valid for the duration of your stay and provide supporting documents (financial proof, accommodation, purpose).",
+      "Some nationalities do not need a visa for short stays — check nationality-specific rules before applying.",
+      "Application is online; supporting documents and biometrics may be required at a visa centre."
+    ]
+  },
+  {
+    "code": "CA",
+    "country": "Canada",
+    "official_site": "https://www.canada.ca/en/immigration-refugees-citizenship/services/visit-canada/visitor-visa.html",
+    "facts": [
+      "Visitors may need a Temporary Resident Visa (TRV) or an Electronic Travel Authorization (eTA) depending on nationality.",
+      "Applications require proof of funds, travel purpose, and may require biometrics (fingerprints & photo).",
+      "Processing steps include online application, biometric enrolment, and possible in-person submission at VAC/VFS.",
+      "Processing times vary widely by country of application and seasonal demand; check IRCC for current processing times."
+    ]
+  },
+  {
+    "code": "AU",
+    "country": "Australia",
+    "official_site": "https://immi.homeaffairs.gov.au/visas/getting-a-visa/visa-listing/visitor-600",
+    "facts": [
+      "Visitor visa (subclass 600) covers tourism, visiting family/friends and some short business activities.",
+      "Applicants must be outside Australia when applying/decision made (depending on stream).",
+      "Applicants must demonstrate genuine temporary stay intention and sufficient funds; work is not permitted on most visitor streams.",
+      "Different application streams exist (tourist, business visitor, sponsored family)."
+    ]
+  },
+  {
+    "code": "DE",
+    "country": "Germany",
+    "official_site": "https://www.auswaertiges-amt.de/en/visa-service",
+    "facts": [
+      "Schengen short-stay rules apply for Germany (generally up to 90 days in any 180-day period) for non-EEA nationals unless exempt.",
+      "Long-stay/residence visas (work, study, family reunion) require application at German missions; some categories require proof of finances (e.g., blocked account for students).",
+      "Visa requirement depends on nationality; always check the Federal Foreign Office pages for country tables.",
+      "Many document requirements are strict and appointment-based at consulates/embassies."
+    ]
+  },
+  {
+    "code": "FR",
+    "country": "France",
+    "official_site": "https://france-visas.gouv.fr/en/",
+    "facts": [
+      "France uses the France-Visas portal to guide applicants and accept many digital supporting documents.",
+      "Short-stay (Schengen) visas follow the Schengen rules; long-stay visas (student, work, family) have specific procedures and forms.",
+      "Applicants must follow document checklists precisely; missing documents often delay or cause refusal.",
+      "Fees and appointment processes vary by applicant country and consular centre."
+    ]
+  },
+  {
+    "code": "JP",
+    "country": "Japan",
+    "official_site": "https://www.mofa.go.jp/j_info/visit/visa/",
+    "facts": [
+      "Visa types (tourist, business, work, student) differ by purpose and local consular guidance; some nationalities can apply for eVisa online.",
+      "Required documents vary by mission — applicants should consult the embassy/consulate website where they will apply.",
+      "Short-term tourism e-visas exist for eligible nationalities via the eVISA portal.",
+      "Processing and documentation requirements can change by local health/security conditions; confirm with the local Japanese mission."
+    ]
+  },
+  {
+    "code": "IN",
+    "country": "India",
+    "official_site": "https://indianvisaonline.gov.in/",
+    "facts": [
+      "India provides e-Visas for many nationalities (tourist, business, medical) via the official Indian Visa Online portal.",
+      "Application flow is online form → upload supporting documents → submit at visa application center or mission when required.",
+      "Applicants should beware of third-party/fraud sites and use only the official portal for eVisa services.",
+      "Different visa categories have specific document requirements and submission rules."
+    ]
+  },
+  {
+    "code": "AE",
+    "country": "United Arab Emirates",
+    "official_site": "https://u.ae/en/information-and-services/visa-and-emirates-id",
+    "facts": [
+      "UAE issues visit/tourist/residence visas; rules and application channels vary (airline, employer sponsorship, or government portal).",
+      "Some nationalities can obtain visas on arrival; others must apply in advance or use airline/VFS channels.",
+      "Residency visas are linked to Emirates ID issuance and sponsorship (employer, family, property, etc.).",
+      "Applicants should use the UAE government's official portal for accurate rules and fees."
+    ]
+  },
+  {
+    "code": "ZA",
+    "country": "South Africa",
+    "official_site": "https://www.gov.za/services/temporary-residence/visa",
+    "facts": [
+      "South Africa issues temporary residence visas (visitor, study, work, business) and requires specified supporting documents and consular procedures.",
+      "Some travellers require an eVisa; consult Department of Home Affairs guidance and the eVisa portal for online processing.",
+      "Processing requirements and visa exemptions vary by nationality; applicants should check official DHA pages for country-specific rules.",
+      "Appointments, biometric data and consular fees are common parts of the process."
+    ]
+  }
+]

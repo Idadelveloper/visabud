@@ -64,6 +64,7 @@ kotlin {
             implementation("org.jetbrains.androidx.lifecycle:lifecycle-viewmodel-compose:2.9.6")
             implementation("org.jetbrains.kotlinx:kotlinx-datetime:0.7.1")
             implementation("com.russhwolf:multiplatform-settings-no-arg:1.1.1")
+            implementation("org.jetbrains.kotlinx:kotlinx-serialization-json:1.9.0")
         }
         commonTest.dependencies {
             implementation(libs.kotlin.test)

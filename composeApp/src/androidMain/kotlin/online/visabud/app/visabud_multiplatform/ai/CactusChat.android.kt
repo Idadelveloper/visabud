@@ -25,13 +25,41 @@ private class CactusAiChatClient : AiChatClient {
                 contextSize = contextSize
             )
         )
+        // Precompute RAG embeddings for visa facts using model's embedding endpoint
+        try {
+            VisaFactsRag.ensureLoaded { text ->
+                val emb = lm.generateEmbedding(text)
+                if (emb == null || !emb.success) emptyList() else emb.embeddings
+            }
+        } catch (_: Throwable) {
+            // Do not fail chat if RAG preload fails
+        }
         initialized = true
     }
 
     override suspend fun send(messages: List<ChatMsg>, temperature: Double?): String {
-        val cactusMessages = messages.map { com.cactus.ChatMessage(it.content, it.role) }
+        // Retrieve top facts based on the latest user message (or combined user turns)
+        val userQuery = messages.lastOrNull { it.role == "user" }?.content
+            ?: messages.lastOrNull()?.content
+        val systemPreamble: String? = try {
+            if (userQuery != null && VisaFactsRag.isInitialized()) {
+                val hits = VisaFactsRag.retrieve(userQuery, embedder = { q ->
+                    val emb = lm.generateEmbedding(q)
+                    if (emb == null || !emb.success) emptyList() else emb.embeddings
+                }, topK = 4)
+                VisaFactsRag.buildSystemPreamble(hits)
+            } else null
+        } catch (_: Throwable) { null }
+
+        val allMessages = buildList {
+            if (systemPreamble != null) {
+                add(com.cactus.ChatMessage(systemPreamble, "system"))
+            }
+            addAll(messages.map { com.cactus.ChatMessage(it.content, it.role) })
+        }
+
         val result = lm.generateCompletion(
-            messages = cactusMessages,
+            messages = allMessages,
             params = CactusCompletionParams(
                 model = modelSlug,
                 temperature = temperature,

@@ -2,11 +2,15 @@ package online.visabud.app.visabud_multiplatform.ai
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
-import kotlinx.serialization.builtins.ListSerializer
 import kotlinx.serialization.json.Json
 import kotlin.math.sqrt
 import org.jetbrains.compose.resources.ExperimentalResourceApi
 import visabud_multiplatform.composeapp.generated.resources.Res
+import online.visabud.app.visabud_multiplatform.data.DataModule
+import online.visabud.app.visabud_multiplatform.data.EmbeddingItem
+import kotlinx.serialization.json.JsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.encodeToString
 
 @Serializable
 data class VisaFactsEntry(
@@ -26,7 +30,7 @@ object VisaFactsRag {
     // Loaded raw entries
     private var entries: List<VisaFactsEntry> = emptyList()
 
-    // For each fact we keep its embedding.
+    // For each fact we keep its embedding in-memory for fast cold-starts; also persist via EmbeddingRepository
     private data class FactRow(
         val countryCode: String,
         val country: String,
@@ -78,7 +82,7 @@ object VisaFactsRag {
 
     fun isInitialized(): Boolean = isReady && index.isNotEmpty()
 
-    /** Retrieve topK most similar facts for a free-form query */
+    /** Retrieve topK most similar facts for a free-form query (in-memory index) */
     fun retrieve(queryEmbedding: List<Double>, topK: Int = 4): List<RetrievedFact> {
         if (!isInitialized()) return emptyList()
         val qn = normalize(queryEmbedding)
@@ -90,11 +94,84 @@ object VisaFactsRag {
         return scored.sortedByDescending { it.score }.take(topK).filter { it.score.isFinite() }
     }
 
-    /** Convenience: embed a string and retrieve */
+    /** Convenience: embed a string and retrieve (in-memory) */
     suspend fun retrieve(query: String, embedder: suspend (String) -> List<Double>, topK: Int = 4): List<RetrievedFact> {
         val q = embedder(query)
         return retrieve(q, topK)
     }
+
+    /** Persist embeddings into EmbeddingRepository on first run. */
+    @OptIn(ExperimentalResourceApi::class)
+    suspend fun ensurePersisted(embedder: suspend (String) -> List<Double>) {
+        // If repo already has entries, skip
+        val existing = DataModule.embeddings.list(limit = 1)
+        if (existing.isNotEmpty()) return
+        // Load entries if not yet
+        if (entries.isEmpty()) {
+            val bytes = Res.readBytes(RESOURCE_PATH)
+            val list: List<VisaFactsEntry> = json.decodeFromString(bytes.decodeToString())
+            entries = list
+        }
+        // For each fact, compute embedding and upsert
+        val now = currentTimeMillisSafe()
+        var counter = 0
+        for (e in entries) {
+            for (f in e.facts) {
+                val text = "${e.country}: $f"
+                val emb = embedder(text).map { it.toFloat() }
+                val id = "visa_fact_${e.code}_${counter++}"
+                val tagsJson = json.encodeToString(mapOf(
+                    "code" to e.code,
+                    "country" to e.country,
+                    "site" to e.officialSite,
+                    "fact" to f
+                ))
+                val bytesVec = floatArrayToBytes(emb.toFloatArray())
+                DataModule.embeddings.upsert(
+                    EmbeddingItem(
+                        id = id,
+                        text = text,
+                        vector = bytesVec,
+                        tags = tagsJson,
+                        createdAt = now
+                    )
+                )
+            }
+        }
+    }
+
+    /** Repository-based retrieval using cosine similarity. */
+    suspend fun retrieveFromRepo(query: String, embedder: suspend (String) -> List<Double>, topK: Int = 4): List<RetrievedFact> {
+        val qVec = embedder(query).map { it.toFloat() }.toFloatArray()
+        val top = DataModule.embeddings.simpleCosineSearch(qVec, topK)
+        if (top.isEmpty()) return emptyList()
+        return top.mapNotNull { item ->
+            // Parse tags JSON back to fields
+            try {
+                val obj = json.parseToJsonElement(item.tags) as? JsonObject
+                val code = obj?.get("code")?.jsonPrimitive?.content ?: ""
+                val country = obj?.get("country")?.jsonPrimitive?.content ?: ""
+                val site = obj?.get("site")?.jsonPrimitive?.content ?: ""
+                val fact = obj?.get("fact")?.jsonPrimitive?.content ?: item.text
+                RetrievedFact(code, country, site, fact, score = 1.0) // score not used downstream
+            } catch (_: Throwable) { null }
+        }
+    }
+
+    private fun floatArrayToBytes(arr: FloatArray): ByteArray {
+        val out = ByteArray(arr.size * 4)
+        var j = 0
+        for (f in arr) {
+            val bits = f.toBits()
+            out[j++] = (bits and 0xFF).toByte()
+            out[j++] = ((bits ushr 8) and 0xFF).toByte()
+            out[j++] = ((bits ushr 16) and 0xFF).toByte()
+            out[j++] = ((bits ushr 24) and 0xFF).toByte()
+        }
+        return out
+    }
+
+    private fun currentTimeMillisSafe(): Long = 0L
 
     private fun cosine(a: List<Double>, b: List<Double>): Double {
         if (a.isEmpty() || b.isEmpty() || a.size != b.size) return Double.NaN

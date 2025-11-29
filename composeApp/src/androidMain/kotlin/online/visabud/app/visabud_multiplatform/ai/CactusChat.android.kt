@@ -4,6 +4,8 @@ import com.cactus.CactusCompletionParams
 import com.cactus.CactusInitParams
 import com.cactus.CactusLM
 import com.cactus.InferenceMode
+import com.cactus.models.ToolParameter
+import com.cactus.models.createTool
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 
@@ -25,9 +27,9 @@ private class CactusAiChatClient : AiChatClient {
                 contextSize = contextSize
             )
         )
-        // Precompute RAG embeddings for visa facts using model's embedding endpoint
+        // Precompute and persist RAG embeddings for visa facts using model's embedding endpoint
         try {
-            VisaFactsRag.ensureLoaded { text ->
+            VisaFactsRag.ensurePersisted { text ->
                 val emb = lm.generateEmbedding(text)
                 if (emb == null || !emb.success) emptyList() else emb.embeddings
             }
@@ -44,8 +46,8 @@ private class CactusAiChatClient : AiChatClient {
 
         var retrievedFacts: List<VisaFactsRag.RetrievedFact> = emptyList()
         val systemPreamble: String? = try {
-            if (userQuery != null && VisaFactsRag.isInitialized()) {
-                retrievedFacts = VisaFactsRag.retrieve(userQuery, embedder = { q ->
+            if (userQuery != null) {
+                retrievedFacts = VisaFactsRag.retrieveFromRepo(userQuery, embedder = { q ->
                     val emb = lm.generateEmbedding(q)
                     if (emb == null || !emb.success) emptyList() else emb.embeddings
                 }, topK = 6)
@@ -60,12 +62,27 @@ private class CactusAiChatClient : AiChatClient {
             addAll(messages.map { com.cactus.ChatMessage(it.content, it.role) })
         }
 
+        // Define function-calling tool for structured roadmaps
+        val tools = listOf(
+            createTool(
+                name = "produce_roadmap",
+                description = "Produce a JSON roadmap for achieving a specific visa or immigration outcome.",
+                parameters = mapOf(
+                    "origin_country" to ToolParameter(type = "string", description = "User's current or passport country", required = false),
+                    "target_country" to ToolParameter(type = "string", description = "Destination country", required = true),
+                    "purpose" to ToolParameter(type = "string", description = "Purpose e.g., student, work, visit", required = true),
+                    "steps" to ToolParameter(type = "array", description = "Optional custom steps array if applicable", required = false)
+                )
+            )
+        )
+
         val result = lm.generateCompletion(
             messages = allMessages,
             params = CactusCompletionParams(
                 model = modelSlug,
                 temperature = temperature,
-                mode = InferenceMode.LOCAL
+                mode = InferenceMode.LOCAL,
+                tools = tools
             )
         )
         if (result == null || !result.success) {
@@ -73,7 +90,11 @@ private class CactusAiChatClient : AiChatClient {
         }
         val base = result.response.orEmpty()
         val sources = VisaFactsRag.buildSourcesBlock(retrievedFacts)
-        return if (sources.isBlank()) base else base + "\n\nSources:\n" + sources
+        val toolJson = result.toolCalls?.joinToString("\n") { tc ->
+            "Tool: ${tc.name}\nArgs: ${tc.arguments}"
+        }.orEmpty()
+        val withSources = if (sources.isBlank()) base else base + "\n\nSources:\n" + sources
+        return if (toolJson.isBlank()) withSources else withSources + "\n\nRoadmap (JSON):\n" + toolJson
     }
 
     override suspend fun isModelDownloaded(): Boolean {

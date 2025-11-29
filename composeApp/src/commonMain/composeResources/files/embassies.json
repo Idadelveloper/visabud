@@ -1,0 +1,78 @@
+[
+  {
+    "code": "US",
+    "country": "United States",
+    "missions": [
+      {"type": "Embassy", "city": "London", "address": "33 Nine Elms Ln, London SW11 7US, United Kingdom", "phone": "+44 20 7499 9000", "email": "londonusembassy@state.gov", "website": "https://uk.usembassy.gov/", "lat": 51.481089, "lon": -0.137245},
+      {"type": "Consulate", "city": "Mumbai", "address": "C-49, G Block Rd, G Block BKC, Bandra Kurla Complex, Bandra East, Mumbai, India", "phone": "+91 22 2672 4000", "email": "mumbainiv@state.gov", "website": "https://in.usembassy.gov/embassy-consulates/mumbai/", "lat": 19.0606, "lon": 72.8679},
+      {"type": "Consulate", "city": "Toronto", "address": "360 University Ave, Toronto, ON M5G 1S4, Canada", "phone": "+1 416-595-1700", "email": "torontoNIV@state.gov", "website": "https://ca.usembassy.gov/embassy-consulates/toronto/", "lat": 43.6526, "lon": -79.3853},
+      {"type": "Embassy", "city": "Tokyo", "address": "1-10-5 Akasaka, Minato City, Tokyo 107-8420, Japan", "phone": "+81 3-3224-5000", "email": "tokyoacs@state.gov", "website": "https://jp.usembassy.gov/", "lat": 35.6716, "lon": 139.7351}
+    ]
+  },
+  {
+    "code": "UK",
+    "country": "United Kingdom",
+    "missions": [
+      {"type": "Embassy", "city": "Washington, D.C.", "address": "3100 Massachusetts Ave NW, Washington, DC 20008, USA", "phone": "+1 202-588-6500", "email": "publicaffairs.us@fco.gov.uk", "website": "https://www.gov.uk/world/organisations/british-embassy-washington", "lat": 38.9190, "lon": -77.0605},
+      {"type": "Consulate", "city": "New York", "address": "845 3rd Ave, New York, NY 10022, USA", "phone": "+1 212-745-0200", "email": "", "website": "https://www.gov.uk/world/organisations/british-consulate-general-new-york", "lat": 40.7540, "lon": -73.9690},
+      {"type": "Consulate", "city": "Mumbai", "address": "C-32 G Block, Bandra Kurla Complex, Mumbai 400051, India", "phone": "+91 22 6650 2222", "email": "", "website": "https://www.gov.uk/world/organisations/british-deputy-high-commission-mumbai", "lat": 19.0654, "lon": 72.8677}
+    ]
+  },
+  {
+    "code": "CA",
+    "country": "Canada",
+    "missions": [
+      {"type": "Embassy", "city": "London", "address": "Canada House, Trafalgar Square, London SW1Y 5BJ, UK", "phone": "+44 20 7004 6000", "email": "ldnpublic@international.gc.ca", "website": "https://www.international.gc.ca/country-pays/united_kingdom-royaume_uni/london.aspx?lang=eng", "lat": 51.5079, "lon": -0.1283},
+      {"type": "Consulate", "city": "New York", "address": "466 Lexington Ave, New York, NY 10017, USA", "phone": "+1 212-596-1600", "email": "", "website": "https://www.international.gc.ca/country-pays/us-eu/new_york.aspx?lang=eng", "lat": 40.7526, "lon": -73.9735}
+    ]
+  },
+  {
+    "code": "AU",
+    "country": "Australia",
+    "missions": [
+      {"type": "High Commission", "city": "London", "address": "Australia House, Strand, London WC2B 4LA, UK", "phone": "+44 20 7379 4334", "email": "public.affairsuk@dfat.gov.au", "website": "https://uk.embassy.gov.au/", "lat": 51.5131, "lon": -0.1187}
+    ]
+  },
+  {
+    "code": "DE",
+    "country": "Germany",
+    "missions": [
+      {"type": "Embassy", "city": "London", "address": "23 Belgrave Square, London SW1X 8PZ, UK", "phone": "+44 20 7824 1300", "email": "info@lond.diplo.de", "website": "https://uk.diplo.de/", "lat": 51.4997, "lon": -0.1536}
+    ]
+  },
+  {
+    "code": "FR",
+    "country": "France",
+    "missions": [
+      {"type": "Embassy", "city": "London", "address": "58 Knightsbridge, London SW1X 7JT, UK", "phone": "+44 20 7073 1000", "email": "", "website": "https://uk.ambafrance.org/", "lat": 51.5019, "lon": -0.1608}
+    ]
+  },
+  {
+    "code": "JP",
+    "country": "Japan",
+    "missions": [
+      {"type": "Embassy", "city": "London", "address": "101-104 Piccadilly, London W1J 7JT, UK", "phone": "+44 20 7465 6500", "email": "", "website": "https://www.uk.emb-japan.go.jp/itprtop_en/index.html", "lat": 51.5045, "lon": -0.1463}
+    ]
+  },
+  {
+    "code": "IN",
+    "country": "India",
+    "missions": [
+      {"type": "High Commission", "city": "London", "address": "India House, Aldwych, London WC2B 4NA, UK", "phone": "+44 20 7836 8484", "email": "", "website": "https://www.hcilondon.gov.in/", "lat": 51.5126, "lon": -0.1182}
+    ]
+  },
+  {
+    "code": "AE",
+    "country": "United Arab Emirates",
+    "missions": [
+      {"type": "Embassy", "city": "London", "address": "1-2 Grosvenor Crescent, London SW1X 7EE, UK", "phone": "+44 20 7581 1281", "email": "", "website": "https://www.uae-embassy.org.uk/", "lat": 51.5010, "lon": -0.1509}
+    ]
+  },
+  {
+    "code": "ZA",
+    "country": "South Africa",
+    "missions": [
+      {"type": "High Commission", "city": "London", "address": "South Africa House, Trafalgar Square, London WC2N 5DP, UK", "phone": "+44 20 7451 7299", "email": "", "website": "https://southafrica.org/uk/", "lat": 51.5080, "lon": -0.1277}
+    ]
+  }
+]

@@ -8,7 +8,14 @@
       "Applicants frequently must show intent to return to home country, proof of funds, and purpose of visit.",
       "Biometrics (fingerprints/photo) and an in-person interview may be required for many nonimmigrant visas.",
       "Immigrant (green card) paths are numerous (family-sponsored, employment-based); each has category-specific requirements and priority processing rules."
-    ]
+    ],
+    "visa_types": ["Tourist (B-2)", "Business (B-1)", "Student (F-1/M-1)", "Exchange (J-1)", "Work (H-1B/L-1/O-1)", "Immigrant (EB/Family)"] ,
+    "visa_free_policy": "Visa Waiver Program allows eligible nationalities short stays (usually up to 90 days) without a visa; ESTA required.",
+    "checklist": ["Valid passport", "DS-160 confirmation", "Visa fee receipt", "Photo meeting specifications", "Supporting documents (funds, ties, itinerary)"],
+    "fees": "Varies by category; many nonimmigrant visas have MRV fee around $185 (subject to change).",
+    "processing_time": "From a few days to several months depending on category and embassy workload.",
+    "restrictions": ["Security/background checks may extend processing", "Overstays can impact future eligibility"],
+    "notes": "Always confirm category-specific rules on USCIS/State Dept sites."
   },
   {
     "code": "UK",

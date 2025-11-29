@@ -17,7 +17,14 @@ data class VisaFactsEntry(
     val code: String,
     val country: String,
     @SerialName("official_site") val officialSite: String,
-    val facts: List<String>
+    val facts: List<String>,
+    @SerialName("visa_types") val visaTypes: List<String>? = null,
+    @SerialName("visa_free_policy") val visaFreePolicy: String? = null,
+    val checklist: List<String>? = null,
+    val fees: String? = null,
+    @SerialName("processing_time") val processingTime: String? = null,
+    val restrictions: List<String>? = null,
+    val notes: String? = null
 )
 
 @Serializable
@@ -26,6 +33,74 @@ private data class VisaFactsList(val items: List<VisaFactsEntry>)
 /** A tiny in-memory RAG index for visa facts stored in assets/visa_facts.json */
 object VisaFactsRag {
     private const val RESOURCE_PATH = "files/visa_facts.json"
+
+    // Helper lookups and structured accessors for agent tool usage
+    data class CountryQueryResult(
+        val destination: String?,
+        val nationality: String?,
+        val country: VisaFactsEntry?,
+        val missing: List<String>,
+        val prompt: String?
+    )
+
+    fun buildMissingInfoPrompt(destination: String?, nationality: String?): String? {
+        val missing = mutableListOf<String>()
+        if (destination.isNullOrBlank()) missing += "destination"
+        if (nationality.isNullOrBlank()) missing += "nationality"
+        if (missing.isEmpty()) return null
+        val ask = when (missing.size) {
+            1 -> "Could you share your ${missing.first()} so I can check visa rules?"
+            2 -> "To check visa rules I need your destination country and your nationality. Could you provide both?"
+            else -> null
+        }
+        return ask
+    }
+
+    fun findCountryByNameOrCode(input: String?): VisaFactsEntry? {
+        if (input.isNullOrBlank()) return null
+        val key = input.trim().lowercase()
+        return entries.firstOrNull { e ->
+            e.code.lowercase() == key || e.country.lowercase() == key ||
+            e.country.lowercase().contains(key)
+        }
+    }
+
+    fun queryByDestinationNationality(destination: String?, nationality: String?): CountryQueryResult {
+        val prompt = buildMissingInfoPrompt(destination, nationality)
+        val country = if (destination.isNullOrBlank()) null else findCountryByNameOrCode(destination)
+        val missing = buildList {
+            if (destination.isNullOrBlank()) add("destination")
+            if (nationality.isNullOrBlank()) add("nationality")
+        }
+        return CountryQueryResult(destination, nationality, country, missing, prompt)
+    }
+
+    fun buildCountrySummary(entry: VisaFactsEntry, nationality: String? = null): String {
+        val sb = StringBuilder()
+        sb.appendLine("Country: ${entry.country} (${entry.code})")
+        if (!nationality.isNullOrBlank()) sb.appendLine("Based on your nationality: ${nationality} — double-check exemptions and consular rules.")
+        // Visa-free policy and visa types
+        entry.visaFreePolicy?.let { if (it.isNotBlank()) sb.appendLine("Visa-free / waiver: $it") }
+        entry.visaTypes?.takeIf { it.isNotEmpty() }?.let { types ->
+            sb.appendLine("Common visa types: ${types.joinToString()}")
+        }
+        // Typical checklist
+        entry.checklist?.takeIf { it.isNotEmpty() }?.let { list ->
+            sb.appendLine("Typical document checklist:")
+            list.forEach { sb.appendLine("- $it") }
+        }
+        entry.fees?.let { if (it.isNotBlank()) sb.appendLine("Approximate fees: $it") }
+        entry.processingTime?.let { if (it.isNotBlank()) sb.appendLine("Processing time: $it") }
+        entry.restrictions?.takeIf { it.isNotEmpty() }?.let { list ->
+            sb.appendLine("Restrictions / notes:")
+            list.forEach { sb.appendLine("- $it") }
+        }
+        entry.notes?.let { if (it.isNotBlank()) sb.appendLine("General notes: $it") }
+        sb.appendLine()
+        sb.appendLine("Official site: ${entry.officialSite}")
+        sb.appendLine("Reminder: Always verify on the official site. Policies can change.")
+        return sb.toString().trim()
+    }
 
     // Loaded raw entries
     private var entries: List<VisaFactsEntry> = emptyList()
@@ -124,7 +199,14 @@ object VisaFactsRag {
                     "code" to e.code,
                     "country" to e.country,
                     "site" to e.officialSite,
-                    "fact" to f
+                    "fact" to f,
+                    "visa_types" to (e.visaTypes ?: emptyList<String>()),
+                    "visa_free_policy" to (e.visaFreePolicy ?: ""),
+                    "checklist" to (e.checklist ?: emptyList<String>()),
+                    "fees" to (e.fees ?: ""),
+                    "processing_time" to (e.processingTime ?: ""),
+                    "restrictions" to (e.restrictions ?: emptyList<String>()),
+                    "notes" to (e.notes ?: "")
                 ))
                 val bytesVec = floatArrayToBytes(emb.toFloatArray())
                 DataModule.embeddings.upsert(

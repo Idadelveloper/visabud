@@ -48,6 +48,14 @@ object ChatAgent {
         val userMsg = ChatMessageEntity(id = randomId(), threadId = thread, role = "user", content = text, timestamp = now)
         try { DataModule.chats.addMessage(userMsg) } catch (_: Throwable) {}
 
+        // Friendly small-talk: greet naturally and skip prompts/tools
+        if (isGreeting(text)) {
+            val greeting = friendlyGreeting()
+            val assistantMsg = ChatMessageEntity(id = randomId(), threadId = thread, role = "assistant", content = greeting, timestamp = now + 1)
+            try { DataModule.chats.addMessage(assistantMsg) } catch (_: Throwable) {}
+            return AgentReply(replyText = greeting, toolUsed = "chat")
+        }
+
         // 1) Auto-fill memory from chat (always run first to update profile locally)
         val history = try { DataModule.chats.listMessages(thread) } catch (_: Throwable) { listOf(userMsg) }
         val autoInitial = ProfileBuilderTool.autoFillFromChat(history, destination = null, neededFor = null)
@@ -72,7 +80,7 @@ object ChatAgent {
         profile = autoContext.profile
         // If a targeted prompt is needed, ask it before running any tool
         if (!autoContext.prompt.isNullOrBlank()) {
-            val p = autoContext.prompt!!
+            val p = softenPrompt(autoContext.prompt!!)
             val assistant = ChatMessageEntity(id = randomId(), threadId = thread, role = "assistant", content = p, timestamp = now + 1)
             try { DataModule.chats.addMessage(assistant) } catch (_: Throwable) {}
             return AgentReply(replyText = p, prompt = p, toolUsed = null, warnings = genericWarnings())
@@ -332,6 +340,26 @@ object ChatAgent {
 
     private fun now(): Long = 0L
     private fun randomId(): String = "msg_" + kotlin.random.Random.nextLong().toString(16)
+
+    // ---- Conversation tone helpers ----
+    private fun isGreeting(text: String): Boolean {
+        val t = text.trim().lowercase()
+        if (t.isEmpty()) return false
+        val greetings = listOf("hi", "hello", "hey", "good morning", "good afternoon", "good evening")
+        // Only treat as greeting if the message is short and matches a greeting phrase
+        return greetings.any { g -> t == g || t.startsWith("$g!") || t == "$g." }
+    }
+
+    private fun friendlyGreeting(): String =
+        "Hi! I’m VisaBud. I can help with visa options, requirements, costs, and embassies. What would you like to do today?"
+
+    private fun softenPrompt(p: String): String {
+        // Lightly rephrase robotic prompts into a friendly tone.
+        var s = p
+        s = s.replace("To ", "To help you better, ")
+        s = s.replace("please share", "could you share")
+        return s
+    }
 
     // ----- Visa Type handler and helpers -----
     private suspend fun handleVisaType(profile: UserProfile, text: String): AgentReply {

@@ -10,7 +10,37 @@ import kotlinx.coroutines.sync.withLock
  * create/destroy of the native context across different features (chat, docs, RAG).
  */
 object CactusLmHolder {
-    private val lm: CactusLM by lazy { CactusLM(enableToolFiltering = false) }
+    // ---- Tool filtering configuration (can be adjusted before first use) ----
+    @Volatile var toolFilterStrategy: com.cactus.services.ToolFilterStrategy = com.cactus.services.ToolFilterStrategy.SEMANTIC
+    @Volatile var toolFilterMaxTools: Int = 3
+    @Volatile var toolFilterSimilarityThreshold: Double = 0.5
+
+    /**
+     * Optionally adjust tool filtering parameters BEFORE the LLM instance is first created.
+     * If called after the instance has been created, the change will not take effect until app restart.
+     */
+    fun configureToolFiltering(strategy: com.cactus.services.ToolFilterStrategy = toolFilterStrategy,
+                               maxTools: Int = toolFilterMaxTools,
+                               similarityThreshold: Double = toolFilterSimilarityThreshold) {
+        if (_lmCreated) return // no-op if already created
+        toolFilterStrategy = strategy
+        toolFilterMaxTools = maxTools
+        toolFilterSimilarityThreshold = similarityThreshold
+    }
+
+    @Volatile private var _lmCreated: Boolean = false
+    private val lm: CactusLM by lazy {
+        _lmCreated = true
+        // Enable tool filtering per Cactus SDK; prefer SEMANTIC for better accuracy with many tools
+        CactusLM(
+            enableToolFiltering = true,
+            toolFilterConfig = com.cactus.services.ToolFilterConfig(
+                strategy = toolFilterStrategy,
+                maxTools = toolFilterMaxTools,
+                similarityThreshold = toolFilterSimilarityThreshold
+            )
+        )
+    }
     private val initMutex = Mutex()
     private val opMutex = Mutex()
     @Volatile private var initialized = false

@@ -201,3 +201,28 @@ App integration:
 Notes:
 - We currently use city keywords or lat,lon provided by the user/profile to estimate proximity. In future, operating hours and “open now” logic can be added using the hours fields in the dataset.
 - All processing remains on‑device; no external geospatial DB is required for the MVP.
+
+
+## Tool Filtering (CactusLM)
+VisaBud uses the Cactus ToolFilterService to pass only the most relevant tools to the model for a given user query. This improves accuracy and reduces confusion when many tools are available.
+
+- Default configuration (Android): SEMANTIC strategy, maxTools = 3, similarityThreshold = 0.5
+- Location: composeApp/src/androidMain/kotlin/online/visabud_multiplatform/ai/CactusLmHolder.android.kt
+
+You can adjust these parameters before the first model initialization:
+
+```kotlin
+// Optional: adjust tool filtering BEFORE first use
+CactusLmHolder.configureToolFiltering(
+    strategy = com.cactus.services.ToolFilterStrategy.SEMANTIC, // or SIMPLE
+    maxTools = 3,
+    similarityThreshold = 0.5
+)
+
+// Ensure model is ready afterwards
+CactusLmHolder.ensureReady()
+```
+
+Notes
+- If you call configureToolFiltering after the model instance is created, the change will not take effect until the next app start (by design to keep the instance stable).
+- Function calling is defined in CactusChat.android.kt. The tool list you see there is the full set; the active subset for a prompt is selected automatically by ToolFilter according to the config above.

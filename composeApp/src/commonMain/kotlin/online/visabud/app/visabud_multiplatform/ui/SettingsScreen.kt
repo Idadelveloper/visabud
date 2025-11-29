@@ -41,6 +41,7 @@ fun SettingsScreen(paddingValues: PaddingValues, onOpenProfile: () -> Unit = {})
     val snackbar = remember { SnackbarHostState() }
 
     var profile by remember { mutableStateOf<UserProfile?>(null) }
+    var showAbout by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         profile = DataModule.profiles.getProfile() ?: UserProfile()
@@ -67,15 +68,17 @@ fun SettingsScreen(paddingValues: PaddingValues, onOpenProfile: () -> Unit = {})
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Text("Your Profile", style = MaterialTheme.typography.titleLarge)
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Button(onClick = onOpenProfile) { Text("Open Profile Page") }
-                        }
+            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                Button(onClick = onOpenProfile) { Text("Open Profile Page") }
+                Button(onClick = {
+                    // No-op login for now; show a friendly message
+                    scope.launch { snackbar.showSnackbar("Login coming soon") }
+                }) { Text("Log in") }
+                Button(onClick = { showAbout = true }) { Text("About") }
+            }
             val p = profile
             if (p != null) {
-                ProfileEditor(p) { updated -> profile = updated }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = { saveProfile() }) { Text("Save") }
-                }
+                // Inline profile editing has been removed from Settings. Use the Profile page instead.
                 Divider()
                 Text("Saved Documents", style = MaterialTheme.typography.titleMedium)
                 SavedDocsList(p.savedDocs)
@@ -84,6 +87,21 @@ fun SettingsScreen(paddingValues: PaddingValues, onOpenProfile: () -> Unit = {})
             }
         }
         SnackbarHost(hostState = snackbar)
+
+        if (showAbout) {
+            androidx.compose.material3.AlertDialog(
+                onDismissRequest = { showAbout = false },
+                title = { Text("About VisaBud") },
+                text = {
+                    Text(
+                        "VisaBud is a privacy-first, on-device visa assistant. It helps you explore visa options, requirements, costs, and embassies using local data and your profile.\n\nVersion: MVP (2025-11-29)"
+                    )
+                },
+                confirmButton = {
+                    Button(onClick = { showAbout = false }) { Text("Close") }
+                }
+            )
+        }
     }
 }
 

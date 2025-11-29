@@ -11,4 +11,7 @@ interface AiChatClient {
     fun unload()
 }
 
+// Platform toast helper (no-op on non-Android platforms)
+expect fun showToast(message: String)
+
 expect fun aiChatClient(): AiChatClient

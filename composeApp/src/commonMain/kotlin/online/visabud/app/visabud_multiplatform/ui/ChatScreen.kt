@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
 import online.visabud.app.visabud_multiplatform.ai.ChatMsg
 import online.visabud.app.visabud_multiplatform.ai.aiChatClient
+import online.visabud.app.visabud_multiplatform.ai.showToast
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -39,11 +40,22 @@ fun ChatScreen(paddingValues: PaddingValues) {
 
     val client = remember { aiChatClient() }
 
+    // Snackbar host for toast-like notifications
+    val snackbarHostState = remember { SnackbarHostState() }
+    var hasShownStartToast by remember { mutableStateOf(false) }
+
     // Initialize model on first open to start download of local-qwen3-0.6
     LaunchedEffect(Unit) {
         try {
+            if (!hasShownStartToast) {
+                hasShownStartToast = true
+                scope.launch { snackbarHostState.showSnackbar("Starting model download: local-qwen3-0.6") }
+            }
+            showToast("Model download started")
             client.ensureReady()
             isLoading = false
+            showToast("Model download complete")
+            scope.launch { snackbarHostState.showSnackbar("Model download complete. Ready to chat.") }
         } catch (t: Throwable) {
             error = t.message ?: "Initialization failed"
             isLoading = false
@@ -73,6 +85,13 @@ fun ChatScreen(paddingValues: PaddingValues) {
     }
 
     Box(modifier = Modifier.fillMaxSize()) {
+        // Snackbar host (toast-like)
+        SnackbarHost(
+            hostState = snackbarHostState,
+            modifier = Modifier
+                .align(Alignment.BottomCenter)
+                .padding(bottom = 80.dp)
+        )
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -80,7 +99,11 @@ fun ChatScreen(paddingValues: PaddingValues) {
         ) {
             // Status banner / error
             if (isLoading) {
-                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+                    Text("Downloading model… This may take a minute on first run.", style = MaterialTheme.typography.bodySmall)
+                    Spacer(Modifier.height(6.dp))
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                }
             }
             if (error != null) {
                 AssistChip(onClick = {
@@ -89,7 +112,11 @@ fun ChatScreen(paddingValues: PaddingValues) {
                     scope.launch {
                         try {
                             isLoading = true
+                            snackbarHostState.showSnackbar("Starting model download: local-qwen3-0.6")
+                            showToast("Model download started")
                             client.ensureReady()
+                            showToast("Model download complete")
+                            snackbarHostState.showSnackbar("Model download complete. Ready to chat.")
                         } catch (t: Throwable) {
                             error = t.message ?: "Initialization failed"
                         } finally {

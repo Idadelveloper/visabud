@@ -14,6 +14,9 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         CactusContextInitializer.initialize(this)
 
+        // Set global context for Android Toasts
+        online.visabud.app.visabud_multiplatform.ai.ToastPlatform.appContext = applicationContext
+
         setContent {
             App()
         }

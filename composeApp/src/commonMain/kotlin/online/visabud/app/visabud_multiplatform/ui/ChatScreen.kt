@@ -56,13 +56,18 @@ fun ChatScreen(paddingValues: PaddingValues) {
 
     // Ensure model is ready on first open (no simulated messages)
     LaunchedEffect(Unit) {
-        // Notify start
-        showToast("Downloading model…")
-        snackbarHostState.showSnackbar("Model download started")
         try {
+            val alreadyDownloaded = client.isModelDownloaded()
+            if (!alreadyDownloaded) {
+                // Only notify if we are about to download
+                showToast("Downloading model…")
+                snackbarHostState.showSnackbar("Model download started")
+            }
             client.ensureReady()
-            showToast("Model ready")
-            snackbarHostState.showSnackbar("Model ready. You can start chatting.")
+            if (!alreadyDownloaded) {
+                showToast("Model ready")
+                snackbarHostState.showSnackbar("Model ready. You can start chatting.")
+            }
         } catch (e: Throwable) {
             snackbarHostState.showSnackbar("Failed to init model: ${e.message ?: "unknown"}")
         }

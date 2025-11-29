@@ -8,6 +8,7 @@ data class ChatMsg(val content: String, val role: String)
 interface AiChatClient {
     suspend fun ensureReady(contextSize: Int = 2048)
     suspend fun send(messages: List<ChatMsg>, temperature: Double? = 0.3): String
+    suspend fun isModelDownloaded(): Boolean
     fun unload()
 }
 

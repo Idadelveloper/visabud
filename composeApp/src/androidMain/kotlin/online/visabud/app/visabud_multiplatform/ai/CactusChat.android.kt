@@ -15,7 +15,10 @@ private class CactusAiChatClient : AiChatClient {
 
     override suspend fun ensureReady(contextSize: Int): Unit = initMutex.withLock {
         if (initialized && lm.isLoaded()) return
-        lm.downloadModel(modelSlug)
+        // Only download if not already present
+        if (!isModelDownloaded()) {
+            lm.downloadModel(modelSlug)
+        }
         lm.initializeModel(
             CactusInitParams(
                 model = modelSlug,
@@ -39,6 +42,15 @@ private class CactusAiChatClient : AiChatClient {
             throw IllegalStateException(result?.response ?: "Cactus completion failed")
         }
         return result.response.orEmpty()
+    }
+
+    override suspend fun isModelDownloaded(): Boolean {
+        return try {
+            val models = lm.getModels()
+            models.any { it.slug == modelSlug && it.isDownloaded }
+        } catch (e: Exception) {
+            false
+        }
     }
 
     override fun unload() {

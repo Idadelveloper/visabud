@@ -10,5 +10,6 @@ actual fun ensureDataModuleInitialized() {
     DataModule.chats = FileChatRepository()
     DataModule.embeddings = FileEmbeddingRepository(maxEntries = 500)
     DataModule.roadmaps = FileRoadmapRepository()
+    DataModule.checklists = FileChecklistRepository()
     // Keep documents in-memory for now; can be persisted later
 }

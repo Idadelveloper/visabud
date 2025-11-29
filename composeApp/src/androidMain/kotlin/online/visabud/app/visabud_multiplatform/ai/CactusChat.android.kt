@@ -40,6 +40,80 @@ private class CactusAiChatClient : AiChatClient {
     }
 
     override suspend fun send(messages: List<ChatMsg>, temperature: Double?): String {
+        val latestUser = messages.lastOrNull { it.role == "user" }?.content?.trim() ?: ""
+        val lower = latestUser.lowercase()
+        val isRoadmap = lower.startsWith("roadmap_json:")
+        val isDocReview = lower.startsWith("doc_review:")
+        val isInterview = lower.startsWith("interview_practice:")
+
+        // Structured flows
+        if (isRoadmap || isDocReview || isInterview) {
+            val payload = latestUser.substringAfter(":").trim()
+            val sysMsg: String
+            val userMsg = payload.ifBlank { "{}" }
+            val params: CactusCompletionParams
+            val msgList: List<com.cactus.ChatMessage>
+
+            if (isRoadmap) {
+                // Retrieve facts using payload as query to bias by target country/purpose
+                val facts = try {
+                    VisaFactsRag.retrieveFromRepo(payload.ifBlank { latestUser }, embedder = { q ->
+                        val emb = lm.generateEmbedding(q)
+                        if (emb == null || !emb.success) emptyList() else emb.embeddings
+                    }, topK = 6)
+                } catch (_: Throwable) { emptyList() }
+                sysMsg = PromptTemplates.roadmapSystem(facts)
+                msgList = listOf(
+                    com.cactus.ChatMessage(sysMsg, "system"),
+                    com.cactus.ChatMessage(userMsg, "user")
+                )
+                params = CactusCompletionParams(
+                    model = modelSlug,
+                    temperature = 0.2,
+                    topP = 0.9,
+                    maxTokens = 800,
+                    mode = InferenceMode.LOCAL,
+                    tools = emptyList()
+                )
+            } else if (isDocReview) {
+                sysMsg = PromptTemplates.documentReviewSystem()
+                msgList = listOf(
+                    com.cactus.ChatMessage(sysMsg, "system"),
+                    com.cactus.ChatMessage(userMsg, "user")
+                )
+                params = CactusCompletionParams(
+                    model = modelSlug,
+                    temperature = 0.2,
+                    topP = 0.9,
+                    maxTokens = 500,
+                    mode = InferenceMode.LOCAL,
+                    tools = emptyList()
+                )
+            } else { // Interview practice
+                sysMsg = PromptTemplates.interviewPracticeSystem()
+                msgList = listOf(
+                    com.cactus.ChatMessage(sysMsg, "system"),
+                    com.cactus.ChatMessage(userMsg, "user")
+                )
+                params = CactusCompletionParams(
+                    model = modelSlug,
+                    temperature = 0.2,
+                    topP = 0.9,
+                    maxTokens = 600,
+                    mode = InferenceMode.LOCAL,
+                    tools = emptyList()
+                )
+            }
+
+            val result = lm.generateCompletion(messages = msgList, params = params)
+            if (result == null || !result.success) {
+                throw IllegalStateException(result?.response ?: "Cactus completion failed")
+            }
+            // For structured flows, return JSON as-is (no sources or tool output appended)
+            return result.response.orEmpty().trim()
+        }
+
+        // Default chat: RAG-assisted free-form
         // Retrieve top facts based on the latest user message (or combined user turns)
         val userQuery = messages.lastOrNull { it.role == "user" }?.content
             ?: messages.lastOrNull()?.content

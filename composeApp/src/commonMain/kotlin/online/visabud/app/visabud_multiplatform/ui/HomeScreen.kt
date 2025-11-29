@@ -1,6 +1,7 @@
 package online.visabud.app.visabud_multiplatform.ui
 
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.background
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -26,6 +27,7 @@ import androidx.compose.material.icons.outlined.LocationOn
 import androidx.compose.material.icons.outlined.Map
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
@@ -35,6 +37,10 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -56,6 +62,9 @@ fun HomeScreen(
     onNavigateToChat: () -> Unit
 ) {
     val scrollState = rememberScrollState()
+    var showEmbassyPopup by remember { mutableStateOf(false) }
+    var showInterviewPopup by remember { mutableStateOf(false) }
+    var countrySummaryToShow by remember { mutableStateOf<String?>(null) }
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -64,9 +73,41 @@ fun HomeScreen(
             .background(MaterialTheme.colorScheme.surfaceContainer)
     ) {
         HeroCard(onNavigateToChat)
-        RecommendedTools()
-        CountrySpotlight()
+        RecommendedTools(
+            onEmbassyClick = { showEmbassyPopup = true },
+            onInterviewClick = { showInterviewPopup = true }
+        )
+        CountrySpotlight(onCountryClick = { summary -> countrySummaryToShow = summary })
         RecentQueries()
+    }
+
+    if (showEmbassyPopup) {
+        AlertDialog(
+            onDismissRequest = { showEmbassyPopup = false },
+            confirmButton = {
+                Button(onClick = { showEmbassyPopup = false }) { Text("Close") }
+            },
+            title = { Text("Embassy Locator") },
+            text = { Text("Find embassies and consulates worldwide. Go to Tools → Embassy Locator for full experience.") }
+        )
+    }
+
+    if (showInterviewPopup) {
+        AlertDialog(
+            onDismissRequest = { showInterviewPopup = false },
+            confirmButton = { Button(onClick = { showInterviewPopup = false }) { Text("Got it") } },
+            title = { Text("Visa Interview — Coming soon") },
+            text = { Text("We’re building a guided practice with common questions and AI feedback. Stay tuned!") }
+        )
+    }
+
+    countrySummaryToShow?.let { summary ->
+        AlertDialog(
+            onDismissRequest = { countrySummaryToShow = null },
+            confirmButton = { Button(onClick = { countrySummaryToShow = null }) { Text("Close") } },
+            title = { Text("Visa Summary") },
+            text = { Text(summary) }
+        )
     }
 }
 
@@ -149,10 +190,13 @@ private fun HeroCard(onNavigateToChat: () -> Unit) {
 }
 
 @Composable
-private fun RecommendedTools() {
+private fun RecommendedTools(
+    onEmbassyClick: () -> Unit,
+    onInterviewClick: () -> Unit
+) {
     Column(modifier = Modifier.padding(horizontal = 16.dp)) {
         Text(
-            "Recommended Tools",
+            "Tools",
             style = MaterialTheme.typography.titleMedium,
             modifier = Modifier.padding(bottom = 12.dp)
         )
@@ -163,22 +207,36 @@ private fun RecommendedTools() {
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Box(modifier = Modifier.weight(1f)) {
-                QuickActionItem(Icons.Outlined.Calculate, "Cost Calculator")
+                QuickActionItem(
+                    icon = Icons.Outlined.LocationOn,
+                    label = "Embassy Locator",
+                    onClick = onEmbassyClick
+                )
             }
             Box(modifier = Modifier.weight(1f)) {
-                QuickActionItem(Icons.Outlined.LocationOn, "Embassy Locator")
+                QuickActionItem(
+                    icon = Icons.Outlined.Map,
+                    label = "Visa Interview",
+                    badge = "Coming soon",
+                    onClick = onInterviewClick
+                )
             }
-            Box(modifier = Modifier.weight(1f)) {
-                QuickActionItem(Icons.Outlined.Map, "Roadmap")
-            }
+            // Intentionally only two tools per requirements
         }
     }
 }
 
 @Composable
-private fun QuickActionItem(icon: ImageVector, label: String) {
+private fun QuickActionItem(
+    icon: ImageVector,
+    label: String,
+    badge: String? = null,
+    onClick: (() -> Unit)? = null
+) {
     Card(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .let { if (onClick != null) it.clickable { onClick() } else it },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
             containerColor = MaterialTheme.colorScheme.secondaryContainer
@@ -201,12 +259,21 @@ private fun QuickActionItem(icon: ImageVector, label: String) {
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = 4.dp)
             )
+            if (badge != null) {
+                Spacer(Modifier.height(4.dp))
+                Text(
+                    text = badge,
+                    style = MaterialTheme.typography.labelSmall,
+                    fontSize = 9.sp,
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun CountrySpotlight() {
+private fun CountrySpotlight(onCountryClick: (String) -> Unit) {
     val scrollState = rememberScrollState()
     Column(modifier = Modifier.padding(top = 24.dp)) {
         Text(
@@ -221,18 +288,36 @@ private fun CountrySpotlight() {
                 .padding(horizontal = 16.dp),
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            CountryCard("🇺🇸", "United States")
-            CountryCard("🇬🇧", "United Kingdom")
-            CountryCard("🇨🇦", "Canada")
-            CountryCard("🇦🇺", "Australia")
+            CountryCard("🇺🇸", "United States") {
+                onCountryClick(
+                    "The U.S. requires most non-visa-exempt travelers to apply for a B-1 (Business) or B-2 (Tourism) Visa. The core requirement is proving Non-Immigrant Intent—that you have strong ties to your home country and will leave after your temporary stay. Submit DS-160, pay the fee, and attend an in-person embassy/consulate interview with biometrics."
+                )
+            }
+            CountryCard("🇬🇧", "United Kingdom") {
+                onCountryClick(
+                    "Apply for a UK Standard Visitor Visa to visit up to six months. Show you’re a genuine visitor with sufficient funds and a clear itinerary. Complete the online application, pay the fee, and attend a VAC appointment to submit biometrics and documents."
+                )
+            }
+            CountryCard("🇨🇦", "Canada") {
+                onCountryClick(
+                    "Canada’s Temporary Resident Visa (Visitor Visa) requires proof of funds and intent to depart. Apply online, receive a Biometric Instruction Letter (BIL), then book a VAC appointment to give biometrics (usually valid for 10 years)."
+                )
+            }
+            CountryCard("🇦🇺", "Australia") {
+                onCountryClick(
+                    "Australia’s Visitor Visa (Subclass 600) uses a streamlined online process via ImmiAccount. Meet health and character requirements; you may be asked for medicals or police certificates. Apply online, upload documents, and pay. Biometrics may be requested separately."
+                )
+            }
         }
     }
 }
 
 @Composable
-private fun CountryCard(flag: String, name: String) {
+private fun CountryCard(flag: String, name: String, onClick: (() -> Unit)? = null) {
     Card(
-        modifier = Modifier.width(140.dp),
+        modifier = Modifier
+            .width(140.dp)
+            .let { if (onClick != null) it.clickable { onClick() } else it },
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {

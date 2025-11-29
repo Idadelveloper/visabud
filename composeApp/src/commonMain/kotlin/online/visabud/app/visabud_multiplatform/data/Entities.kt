@@ -89,3 +89,13 @@ data class ChatMessageEntity(
     val content: String,
     val timestamp: Long
 )
+
+@Serializable
+data class ChecklistEntity(
+    val id: String,
+    val title: String,
+    val country: String? = null,
+    val visaType: String? = null,
+    val items: List<String> = emptyList(),
+    val createdAt: Long,
+)

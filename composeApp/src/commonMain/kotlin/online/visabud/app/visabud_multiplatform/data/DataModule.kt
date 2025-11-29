@@ -15,5 +15,6 @@ object DataModule {
     val documents: DocumentRepository by lazy { InMemoryDocumentRepository() }
     val embeddings: EmbeddingRepository by lazy { InMemoryEmbeddingRepository(maxEntries = 500) }
     val roadmaps: RoadmapRepository by lazy { InMemoryRoadmapRepository() }
+    val checklists: ChecklistRepository by lazy { InMemoryChecklistRepository() }
     val chats: ChatRepository by lazy { InMemoryChatRepository() }
 }

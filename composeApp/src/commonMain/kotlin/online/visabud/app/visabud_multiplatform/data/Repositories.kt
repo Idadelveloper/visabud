@@ -40,6 +40,13 @@ interface ChatRepository {
     suspend fun clearThread(threadId: String = "default")
 }
 
+interface ChecklistRepository {
+    suspend fun upsert(checklist: ChecklistEntity)
+    suspend fun get(id: String): ChecklistEntity?
+    suspend fun list(): List<ChecklistEntity>
+    suspend fun remove(id: String)
+}
+
 /** Default in-memory implementations to keep app functional without a DB. */
 class InMemoryProfileRepository : ProfileRepository {
     private val mutex = Mutex()
@@ -163,4 +170,14 @@ class InMemoryChatRepository : ChatRepository {
     override suspend fun clearThread(threadId: String) {
         mutex.withLock { messagesByThread.remove(threadId) }
     }
+}
+
+class InMemoryChecklistRepository : ChecklistRepository {
+    private val mutex = Mutex()
+    private val map = LinkedHashMap<String, ChecklistEntity>()
+
+    override suspend fun upsert(checklist: ChecklistEntity) { mutex.withLock { map[checklist.id] = checklist } }
+    override suspend fun get(id: String): ChecklistEntity? = mutex.withLock { map[id] }
+    override suspend fun list(): List<ChecklistEntity> = mutex.withLock { map.values.toList() }
+    override suspend fun remove(id: String) { mutex.withLock { map.remove(id) } }
 }

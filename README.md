@@ -80,6 +80,22 @@ The app uses a local model (e.g., CactusLM on Android). The first run may downlo
 
 ## Build & Run
 
+### Prebuilt Android APK
+- File: `composeApp-arm64-v8a-release.apk` (located in the project root)
+- Architecture: `arm64-v8a` (most modern Android devices)
+- Install via ADB:
+  - macOS/Linux:
+    ```sh
+    adb install -r composeApp-arm64-v8a-release.apk
+    ```
+  - Windows:
+    ```bat
+    adb install -r composeApp-arm64-v8a-release.apk
+    ```
+- Install directly on device (no ADB):
+  1. Copy the APK to your phone.
+  2. On the device, open the APK and follow prompts. If blocked, enable "Install unknown apps" for your file manager/browser.
+
 ### Android
 - From IDE: run the Android run configuration
 - CLI (debug):

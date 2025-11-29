@@ -2,6 +2,7 @@ package online.visabud.app.visabud_multiplatform.ui
 
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -27,12 +28,20 @@ import androidx.compose.material3.ListItemDefaults
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import org.jetbrains.compose.ui.tooling.preview.Preview
+import online.visabud.app.visabud_multiplatform.data.ChecklistEntity
+import online.visabud.app.visabud_multiplatform.data.DataModule
+import online.visabud.app.visabud_multiplatform.data.Roadmap
 
 private val tools = listOf(
     Tool("Cost Calculator", "Estimate your visa application expenses.", Icons.Outlined.Calculate),
@@ -45,6 +54,15 @@ private val tools = listOf(
 
 @Composable
 fun ToolsScreen(paddingValues: PaddingValues, onOpenDocumentReview: () -> Unit = {}, onOpenEmbassyLocator: () -> Unit = {}, onOpenCostCalculator: () -> Unit = {}) {
+    var roadmaps by remember { mutableStateOf<List<Roadmap>>(emptyList()) }
+    var checklists by remember { mutableStateOf<List<ChecklistEntity>>(emptyList()) }
+
+    LaunchedEffect(Unit) {
+        // Load user content from repositories; in-memory impls are fast
+        roadmaps = DataModule.roadmaps.list()
+        checklists = DataModule.checklists.list()
+    }
+
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -66,6 +84,40 @@ fun ToolsScreen(paddingValues: PaddingValues, onOpenDocumentReview: () -> Unit =
                 modifier = Modifier.padding(horizontal = 16.dp),
                 onClick = click
             )
+        }
+
+        // Your Roadmaps section
+        item {
+            SectionHeader(title = "Your Roadmaps")
+        }
+        if (roadmaps.isEmpty()) {
+            item { EmptyState(text = "No saved roadmaps yet.") }
+        } else {
+            items(roadmaps) { rm ->
+                ToolListItem(
+                    icon = Icons.Outlined.Map,
+                    title = rm.title,
+                    subtitle = rm.description ?: "",
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+            }
+        }
+
+        // Your Checklists section
+        item {
+            SectionHeader(title = "Your Checklists")
+        }
+        if (checklists.isEmpty()) {
+            item { EmptyState(text = "No saved checklists yet.") }
+        } else {
+            items(checklists) { ck ->
+                ToolListItem(
+                    icon = Icons.Outlined.Checklist,
+                    title = ck.title,
+                    subtitle = listOfNotNull(ck.country, ck.visaType).joinToString(" · "),
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+            }
         }
     }
 }
@@ -113,6 +165,25 @@ private fun ToolListItem(
 }
 
 private data class Tool(val label: String, val subtitle: String, val icon: ImageVector)
+
+@Composable
+private fun SectionHeader(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleMedium,
+        fontWeight = FontWeight.SemiBold,
+        modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp)
+    )
+}
+
+@Composable
+private fun EmptyState(text: String) {
+    Column(modifier = Modifier
+        .fillMaxWidth()
+        .padding(horizontal = 16.dp, vertical = 8.dp)) {
+        Text(text = text, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
 
 @Preview
 @Composable

@@ -44,7 +44,7 @@ private val tools = listOf(
 )
 
 @Composable
-fun ToolsScreen(paddingValues: PaddingValues, onOpenDocumentReview: () -> Unit = {}) {
+fun ToolsScreen(paddingValues: PaddingValues, onOpenDocumentReview: () -> Unit = {}, onOpenEmbassyLocator: () -> Unit = {}) {
     LazyColumn(
         modifier = Modifier
             .fillMaxSize()
@@ -53,7 +53,11 @@ fun ToolsScreen(paddingValues: PaddingValues, onOpenDocumentReview: () -> Unit =
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         items(tools) { tool ->
-            val click: (() -> Unit)? = if (tool.label == "Document Review") onOpenDocumentReview else null
+            val click: (() -> Unit)? = when (tool.label) {
+                "Document Review" -> onOpenDocumentReview
+                "Embassy Locator" -> onOpenEmbassyLocator
+                else -> null
+            }
             ToolListItem(
                 icon = tool.icon,
                 title = tool.label,

@@ -1,0 +1,11 @@
+code,country,city,lat,lon,address,phone,website
+US,United States,London,51.507268,-0.127606,33 Nine Elms Ln, +44 20 7499 9000,https://uk.usembassy.gov/
+UK,United Kingdom,Washington DC,38.9225,-77.0525,3100 Massachusetts Ave NW, +1 202-588-6500,https://www.gov.uk/world/organisations/british-embassy-washington
+CA,Canada,London,51.5014,-0.1431,Canada House Trafalgar Square, +44 20 7004 6000,https://www.canadainternational.gc.ca/united_kingdom-royaume_uni/
+AU,Australia,London,51.5076,-0.1278,Strand WC2B, +44 20 7379 4334,https://uk.embassy.gov.au/
+DE,Germany,London,51.5143,-0.1460,23 Belgrave Sq, +44 20 7824 1300,https://uk.diplo.de/uk-en
+FR,France,London,51.5136,-0.1483,58 Knightsbridge, +44 20 7073 1200,https://uk.ambafrance.org/
+JP,Japan,London,51.5045,-0.1481,101-104 Piccadilly, +44 20 7465 6500,https://www.uk.emb-japan.go.jp/itprtop_en/index.html
+IN,India,London,51.5010,-0.1550,India House Aldwych, +44 20 7836 8484,https://www.hcilondon.gov.in/
+AE,United Arab Emirates,London,51.5015,-0.1636,1-2 Grosvenor Crescent, +44 20 7581 1281,https://www.uae-embassy.ae/uk/
+ZA,South Africa,London,51.4941,-0.1501,South Africa House Trafalgar Square, +44 20 7451 7299,https://www.gov.za/about-government/contact-directory/foreign-representatives/south-african-missions-abroad

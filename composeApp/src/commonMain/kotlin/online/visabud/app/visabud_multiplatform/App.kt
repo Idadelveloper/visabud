@@ -30,6 +30,7 @@ import online.visabud.app.visabud_multiplatform.ui.HomeScreen
 import online.visabud.app.visabud_multiplatform.ui.ToolsScreen
 import online.visabud.app.visabud_multiplatform.ui.DocumentReviewScreen
 import online.visabud.app.visabud_multiplatform.ui.WelcomeScreen
+import online.visabud.app.visabud_multiplatform.ui.EmbassyLocatorScreen
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 
@@ -73,6 +74,7 @@ private fun MainScreen(initialScreen: MainScreen, onNavigate: (MainScreen) -> Un
             when (currentScreen) {
                 MainScreen.Home -> HomeHeader()
                 MainScreen.Tools -> TopAppBar(title = { Text("Tools") })
+                MainScreen.EmbassyLocator -> TopAppBar(title = { Text("Embassy Locator") })
                 MainScreen.Profile -> TopAppBar(title = { Text("Profile") })
                 MainScreen.DocumentReview -> TopAppBar(title = { Text("Document Review") })
                 MainScreen.Chat -> TopAppBar(
@@ -118,11 +120,12 @@ private fun MainScreen(initialScreen: MainScreen, onNavigate: (MainScreen) -> Un
             MainScreen.Home -> HomeScreen(
                 paddingValues,
                 onNavigateToChat = { currentScreen = MainScreen.Chat })
-            MainScreen.Tools -> ToolsScreen(paddingValues, onOpenDocumentReview = { currentScreen = MainScreen.DocumentReview })
+            MainScreen.Tools -> ToolsScreen(paddingValues, onOpenDocumentReview = { currentScreen = MainScreen.DocumentReview }, onOpenEmbassyLocator = { currentScreen = MainScreen.EmbassyLocator })
             MainScreen.Profile -> { /* TODO: Profile Screen */
             }
             MainScreen.Chat -> ChatScreen(paddingValues)
             MainScreen.DocumentReview -> DocumentReviewScreen(paddingValues)
+            MainScreen.EmbassyLocator -> EmbassyLocatorScreen(paddingValues)
         }
     }
 }
@@ -137,5 +140,6 @@ private enum class MainScreen {
     Tools,
     Profile,
     Chat,
-    DocumentReview
+    DocumentReview,
+    EmbassyLocator
 }

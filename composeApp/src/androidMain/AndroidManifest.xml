@@ -9,6 +9,9 @@
     <!-- Permissions required by Cactus SDK -->
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
+    <!-- Location permissions for Embassy Locator -->
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <!-- Camera permission for document capture (optional for this MVP) -->
     <uses-permission android:name="android.permission.CAMERA" />
 

@@ -22,3 +22,26 @@ interface AiChatClient {
 expect fun showToast(message: String)
 
 expect fun aiChatClient(): AiChatClient
+
+// Default on-device LLM hooks (expect/actual). On Android, backed by CactusLM; on other platforms, may return null.
+expect suspend fun defaultEmbedderOrNull(): (suspend (String) -> List<Double>)?
+expect suspend fun defaultLlmFnOrNull(): (suspend (system: String, user: String) -> String)?
+
+// ---- Speech-to-Text (STT) abstraction ----
+interface SttClient {
+    suspend fun ensureReady(model: String = "whisper-tiny")
+    suspend fun isModelDownloaded(model: String = "whisper-tiny"): Boolean
+    suspend fun transcribe(filePath: String): String?
+    fun unload()
+}
+
+expect fun sttClient(): SttClient
+
+// ---- Audio recording abstraction ----
+interface AudioRecorder {
+    suspend fun start(): Boolean
+    suspend fun stop(): String? // returns file path or null on failure
+    fun isRecording(): Boolean
+}
+
+expect fun audioRecorder(platform: Any? = null): AudioRecorder

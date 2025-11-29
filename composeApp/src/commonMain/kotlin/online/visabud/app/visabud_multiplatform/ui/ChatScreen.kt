@@ -46,9 +46,9 @@ private data class ChatMessage(val text: String, val sender: Sender)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(paddingValues: PaddingValues) {
-    var showUploadDialog by remember { mutableStateOf(false) }
-    var uploadPath by remember { mutableStateOf("") }
-    var uploadVisa by remember { mutableStateOf("") }
+    // Inline attachments instead of popups
+    data class Attached(val path: String, val kind: String)
+    val attachments = remember { mutableStateListOf<Attached>() }
     var message by remember { mutableStateOf("") }
     val messages = remember { mutableStateListOf<ChatMessage>() }
     var isVisaBudTyping by remember { mutableStateOf(false) }
@@ -56,20 +56,27 @@ fun ChatScreen(paddingValues: PaddingValues) {
     val scope = rememberCoroutineScope()
     var showBottomSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
+    
+    // Audio recording state
+    var isRecording by remember { mutableStateOf(false) }
 
     // Snackbar host for toast-like messages on all platforms
     val snackbarHostState = remember { SnackbarHostState() }
     // Show a visible progress bar while the local model is downloading
     var isDownloading by remember { mutableStateOf(false) }
 
+
     // Local AI client (Android/iOS use Cactus; web shows stub)
     val client = remember { aiChatClient() }
+    // Audio recorder (expect/actual per platform)
+    val recorder = remember { online.visabud.app.visabud_multiplatform.ai.audioRecorder() }
 
     // Ensure model is ready on first open (no simulated messages)
     // Platform pickers
     val pickers = rememberPlatformPickers { picked ->
-        uploadPath = picked
-        showUploadDialog = true
+        if (picked.isNotBlank()) attachments.add(Attached(picked, "file"))
+        showBottomSheet = false
+        scope.launch { snackbarHostState.showSnackbar("Attached: " + picked.substringAfterLast('/')) }
     }
 
     LaunchedEffect(Unit) {
@@ -104,18 +111,44 @@ fun ChatScreen(paddingValues: PaddingValues) {
                 message = message,
                 onMessageChange = { message = it },
                 onSendMessage = {
-                    val userText = message
-                    if (userText.isBlank()) return@ChatInputBar
+                    val userTextOriginal = message
+                    if (userTextOriginal.isBlank()) return@ChatInputBar
+                    // Build an attachment note for context
+                    val names = attachments.map { it.path.substringAfterLast('/') }
+                    val attachNote = if (names.isNotEmpty()) " (attached: ${names.joinToString()})" else ""
+                    val userText = userTextOriginal + attachNote
                     messages.add(ChatMessage(userText, Sender.USER))
                     message = ""
                     isVisaBudTyping = true
                     scope.launch {
                         try {
+                            // Persist attachments to local repository
+                            for (a in attachments.toList()) {
+                                try {
+                                    val fields = if (a.kind == "file") documentPipeline().extractFields(a.path) else emptyMap()
+                                    val doc = DocumentMeta(
+                                        id = "doc_" + a.path.hashCode().toString(),
+                                        type = a.kind,
+                                        filename = a.path.substringAfterLast('/').ifBlank { a.path },
+                                        parsedFieldsJson = mapToJson(fields),
+                                        uploadedAt = 0L,
+                                        encryptedPath = a.path
+                                    )
+                                    DataModule.documents.add(doc)
+                                    // Link to profile
+                                    runCatching {
+                                        val existing = DataModule.profiles.getProfile() ?: online.visabud.app.visabud_multiplatform.data.UserProfile()
+                                        DataModule.profiles.upsertProfile(existing.copy(savedDocs = (existing.savedDocs + doc.id).distinct()))
+                                    }
+                                } catch (_: Throwable) { /* ignore attachment persistence errors */ }
+                            }
+                            attachments.clear()
                             // Route through ChatAgent so replies are natural language (no raw JSON)
                             val reply = online.visabud.app.visabud_multiplatform.ai.ChatAgent.handleUserMessage(userText)
                             messages.add(ChatMessage(text = reply.replyText, sender = Sender.VISABUD))
                         } catch (e: Throwable) {
-                            snackbarHostState.showSnackbar("Chat failed: ${e.message ?: "unknown error"}")
+                            val err = e.message ?: "unknown error"
+                            snackbarHostState.showSnackbar("Chat failed: $err")
                         } finally {
                             isVisaBudTyping = false
                         }
@@ -151,10 +184,45 @@ fun ChatScreen(paddingValues: PaddingValues) {
                     item { TypingIndicator() }
                 }
             }
+            // Inline attachments preview row
+            if (attachments.isNotEmpty()) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(horizontal = 16.dp, vertical = 8.dp),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    attachments.forEachIndexed { idx, a ->
+                        Surface(
+                            shape = RoundedCornerShape(16.dp),
+                            color = MaterialTheme.colorScheme.surfaceVariant
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(text = a.path.substringAfterLast('/'), style = MaterialTheme.typography.labelMedium)
+                                Text(
+                                    text = "✕",
+                                    modifier = Modifier
+                                        .clip(CircleShape)
+                                        .clickable {
+                                            attachments.removeAt(idx)
+                                        }
+                                        .padding(2.dp),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
+            }
         }
 
         // Scroll to the bottom when a new message is added
-        LaunchedEffect(messages.size) {
+        LaunchedEffect(messages.size, attachments.size) {
             if (messages.isNotEmpty()) {
                 listState.scrollToItem(messages.lastIndex)
             }
@@ -169,6 +237,43 @@ fun ChatScreen(paddingValues: PaddingValues) {
                 AttachmentOptions(
                     onPickImage = { pickers.pickImage() },
                     onPickFile = { pickers.pickFile() },
+                    onPickAudio = {
+                        // Toggle recording; when stopping, run STT and append transcript to input
+                        scope.launch {
+                            try {
+                                if (!isRecording) {
+                                    val ok = recorder.start()
+                                    isRecording = ok
+                                    val msg = if (ok) "Recording… tap Audio again to stop" else "Unable to start recording"
+                                    snackbarHostState.showSnackbar(msg)
+                                } else {
+                                    val path = recorder.stop()
+                                    isRecording = false
+                                    if (!path.isNullOrBlank()) {
+                                        attachments.add(Attached(path, "audio"))
+                                        snackbarHostState.showSnackbar("Recorded: ${'$'}{path.substringAfterLast('/')}")
+                                        // Auto-transcribe and append to input
+                                        try {
+                                            val stt = online.visabud.app.visabud_multiplatform.ai.sttClient()
+                                            stt.ensureReady()
+                                            val text = stt.transcribe(path)
+                                            if (!text.isNullOrBlank()) {
+                                                message = if (message.isBlank()) text else (message + " \n" + text)
+                                                snackbarHostState.showSnackbar("Transcription added to message")
+                                            }
+                                        } catch (_: Throwable) { /* ignore transcription errors */ }
+                                    } else {
+                                        snackbarHostState.showSnackbar("Recording stopped")
+                                    }
+                                }
+                            } catch (e: Throwable) {
+                                val msg = e.message ?: "unknown"
+                                snackbarHostState.showSnackbar("Audio error: $msg")
+                                isRecording = false
+                                runCatching { recorder.stop() }
+                            }
+                        }
+                    },
                 ) {
                     scope.launch { sheetState.hide() }.invokeOnCompletion {
                         if (!sheetState.isVisible) {
@@ -179,88 +284,7 @@ fun ChatScreen(paddingValues: PaddingValues) {
             }
         }
 
-        // Simple upload dialog to paste a file path/URI and target visa
-        if (showUploadDialog) {
-            AlertDialog(
-                onDismissRequest = { showUploadDialog = false },
-                confirmButton = {
-                    TextButton(onClick = {
-                        showUploadDialog = false
-                        // Trigger document pipeline and agentic review
-                        scope.launch {
-                            snackbarHostState.showSnackbar("Processing document…")
-                            try {
-                                val fields = documentPipeline().extractFields(uploadPath)
-                                // Persist
-                                val doc = online.visabud.app.visabud_multiplatform.data.DocumentMeta(
-                                    id = "doc_" + (uploadPath.hashCode().toString()),
-                                    type = "uploaded",
-                                    filename = uploadPath.substringAfterLast('/').ifBlank { uploadPath },
-                                    parsedFieldsJson = mapToJson(fields),
-                                    uploadedAt = 0L,
-                                    encryptedPath = uploadPath
-                                )
-                                DataModule.documents.add(doc)
-                                // Update profile with saved doc ID
-                                try {
-                                    val existing = DataModule.profiles.getProfile() ?: online.visabud.app.visabud_multiplatform.data.UserProfile()
-                                    val updated = existing.copy(
-                                        savedDocs = (existing.savedDocs + doc.id).distinct(),
-                                        name = existing.name ?: fields["name"],
-                                        dob = existing.dob ?: fields["dob"]
-                                    )
-                                    DataModule.profiles.upsertProfile(updated)
-                                } catch (_: Throwable) {}
-                                // Add a user message informing the agent
-                                val userNote = buildString {
-                                    append("I uploaded a document for ")
-                                    append(uploadVisa.ifBlank { "review" })
-                                    append(". Please review it.")
-                                    if (fields.isNotEmpty()) {
-                                        append(" Document fields: ")
-                                        append(mapToJson(fields))
-                                    }
-                                }
-                                messages.add(ChatMessage(userNote, Sender.USER))
-                                isVisaBudTyping = true
-                                // Send with current history so the model can decide to call tools
-                                val history: List<ChatMsg> = messages.map {
-                                    val role = if (it.sender == Sender.USER) "user" else "assistant"
-                                    ChatMsg(content = it.text, role = role)
-                                }
-                                // Ask ChatAgent to handle the user note and return a readable reply
-                                val agentReply = online.visabud.app.visabud_multiplatform.ai.ChatAgent.handleUserMessage(userNote)
-                                messages.add(ChatMessage(text = agentReply.replyText, sender = Sender.VISABUD))
-                                snackbarHostState.showSnackbar("Document processed.")
-                            } catch (e: Throwable) {
-                                snackbarHostState.showSnackbar("Upload failed: ${e.message ?: "unknown"}")
-                            } finally {
-                                isVisaBudTyping = false
-                                uploadPath = ""; uploadVisa = ""
-                            }
-                        }
-                    }) { Text("Send for Review") }
-                },
-                dismissButton = { TextButton(onClick = { showUploadDialog = false }) { Text("Cancel") } },
-                title = { Text("Upload Document") },
-                text = {
-                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                        OutlinedTextField(
-                            value = uploadPath,
-                            onValueChange = { uploadPath = it },
-                            label = { Text("File path or URI") },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                        OutlinedTextField(
-                            value = uploadVisa,
-                            onValueChange = { uploadVisa = it },
-                            label = { Text("Target visa (e.g., UK Visitor)") },
-                            modifier = Modifier.fillMaxWidth()
-                        )
-                    }
-                }
-            )
-        }
+
     }
 }
 
@@ -391,6 +415,7 @@ private fun ChatInputBar(
 private fun AttachmentOptions(
     onPickImage: () -> Unit,
     onPickFile: () -> Unit,
+    onPickAudio: () -> Unit,
     onOptionSelected: () -> Unit = {}
 ) {
     Column(modifier = Modifier.padding(bottom = 32.dp)) {
@@ -404,7 +429,7 @@ private fun AttachmentOptions(
         AttachmentOptionItem(
             icon = Icons.Outlined.Mic,
             label = "Audio",
-            onClick = onOptionSelected // Placeholder for future voice input
+            onClick = { onPickAudio(); onOptionSelected() }
         )
         AttachmentOptionItem(
             icon = Icons.Outlined.AttachFile,

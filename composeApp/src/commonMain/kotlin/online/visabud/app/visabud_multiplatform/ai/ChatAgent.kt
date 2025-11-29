@@ -43,6 +43,10 @@ object ChatAgent {
 
     // --------- Entry point ---------
     suspend fun handleUserMessage(text: String, options: Options = Options()): AgentReply {
+            // Resolve default local LLM hooks when not provided, so RAG works out of the box on supported platforms
+            val resolvedEmbedder = options.embedder ?: runCatching { defaultEmbedderOrNull() }.getOrNull()
+            val resolvedLlm = options.llmFn ?: runCatching { defaultLlmFnOrNull() }.getOrNull()
+            val effOptions = options.copy(embedder = resolvedEmbedder, llmFn = resolvedLlm)
         val thread = options.threadId
         val now = now()
         val userMsg = ChatMessageEntity(id = randomId(), threadId = thread, role = "user", content = text, timestamp = now)

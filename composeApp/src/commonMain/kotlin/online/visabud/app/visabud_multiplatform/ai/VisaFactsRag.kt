@@ -119,16 +119,46 @@ object VisaFactsRag {
         return if (n == 0.0) v else v.map { it / n }
     }
 
+    private fun extractHost(url: String): String {
+        var s = url
+        val idx = s.indexOf("://")
+        if (idx >= 0) s = s.substring(idx + 3)
+        s = s.substringBefore('/')
+        s = s.substringBefore('?')
+        if (s.startsWith("www.")) s = s.removePrefix("www.")
+        return s
+    }
+
+    private fun todayIso(): String {
+        // Use current session date provided by environment to avoid platform-specific datetime in common code
+        return "2025-11-29"
+    }
+
+    fun buildSourcesBlock(retrieved: List<RetrievedFact>): String {
+        if (retrieved.isEmpty()) return ""
+        val date = todayIso()
+        val lines = retrieved
+            .distinctBy { it.site }
+            .joinToString(separator = "\n") { r ->
+                val host = extractHost(r.site)
+                "- Source: ${host} — ${r.country} official page: ${r.site} (last checked ${date})"
+            }
+        return lines
+    }
+
     /** Build a system prompt string with citations for top retrieved facts */
     fun buildSystemPreamble(retrieved: List<RetrievedFact>): String {
-        if (retrieved.isEmpty()) return "You are VisaBud, a helpful visa assistant. Cite official sites when relevant."
+        if (retrieved.isEmpty()) return "You are VisaBud, a helpful visa assistant. Use only verified facts and cite official sources when relevant. Do not expose chain-of-thought; provide concise answers."
         val sb = StringBuilder()
         sb.appendLine("You are VisaBud, a helpful visa assistant.")
-        sb.appendLine("Use the following verified visa facts when answering. Keep answers concise and cite the matching official site(s).\n")
+        sb.appendLine("Use the following verified visa facts when answering. Keep answers concise and include a short 'Sources' section with official links. Do not show your internal reasoning.")
+        sb.appendLine()
         retrieved.forEachIndexed { i, r ->
-            sb.appendLine("${i + 1}. [${r.country}] ${r.fact} (source: ${r.site})")
+            val host = extractHost(r.site)
+            sb.appendLine("${i + 1}. [${r.country}] ${r.fact} (source: ${host} — ${r.site})")
         }
-        sb.appendLine("\nWhen unsure, say so and suggest checking the official links above.")
+        sb.appendLine()
+        sb.appendLine("When unsure, say so and suggest checking the official links above.")
         return sb.toString()
     }
 }

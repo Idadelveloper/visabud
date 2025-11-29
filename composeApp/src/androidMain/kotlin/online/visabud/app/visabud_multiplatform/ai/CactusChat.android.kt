@@ -41,13 +41,15 @@ private class CactusAiChatClient : AiChatClient {
         // Retrieve top facts based on the latest user message (or combined user turns)
         val userQuery = messages.lastOrNull { it.role == "user" }?.content
             ?: messages.lastOrNull()?.content
+
+        var retrievedFacts: List<VisaFactsRag.RetrievedFact> = emptyList()
         val systemPreamble: String? = try {
             if (userQuery != null && VisaFactsRag.isInitialized()) {
-                val hits = VisaFactsRag.retrieve(userQuery, embedder = { q ->
+                retrievedFacts = VisaFactsRag.retrieve(userQuery, embedder = { q ->
                     val emb = lm.generateEmbedding(q)
                     if (emb == null || !emb.success) emptyList() else emb.embeddings
-                }, topK = 4)
-                VisaFactsRag.buildSystemPreamble(hits)
+                }, topK = 6)
+                VisaFactsRag.buildSystemPreamble(retrievedFacts)
             } else null
         } catch (_: Throwable) { null }
 
@@ -69,7 +71,9 @@ private class CactusAiChatClient : AiChatClient {
         if (result == null || !result.success) {
             throw IllegalStateException(result?.response ?: "Cactus completion failed")
         }
-        return result.response.orEmpty()
+        val base = result.response.orEmpty()
+        val sources = VisaFactsRag.buildSourcesBlock(retrievedFacts)
+        return if (sources.isBlank()) base else base + "\n\nSources:\n" + sources
     }
 
     override suspend fun isModelDownloaded(): Boolean {

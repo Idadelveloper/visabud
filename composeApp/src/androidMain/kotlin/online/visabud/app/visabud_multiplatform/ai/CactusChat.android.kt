@@ -49,10 +49,14 @@ actual fun aiChatClient(): AiChatClient = object : AiChatClient {
     override suspend fun ensureReady(contextSize: Int) {
         if (!lm.isLoaded()) {
             val modelName = "qwen3-0.6" // Example model
-            if (lm.getModels().firstOrNull { it.slug == modelName }?.isDownloaded != true) {
+            val isDownloaded = lm.getModels().firstOrNull { it.slug == modelName }?.isDownloaded == true
+            if (!isDownloaded) {
+                // Notify user via Android toast
+                showToast("Downloading model…")
                 lm.downloadModel(modelName)
             }
             lm.initializeModel(com.cactus.CactusInitParams(model = modelName, contextSize = contextSize))
+            showToast("Model ready")
         }
     }
 

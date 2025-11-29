@@ -27,7 +27,7 @@ import online.visabud.app.visabud_multiplatform.theme.VisabudTheme
 import online.visabud.app.visabud_multiplatform.ui.ChatScreen
 import online.visabud.app.visabud_multiplatform.ui.HomeHeader
 import online.visabud.app.visabud_multiplatform.ui.HomeScreen
-import online.visabud.app.visabud_multiplatform.ui.ToolsScreen
+import online.visabud.app.visabud_multiplatform.ui.SavedScreen
 import online.visabud.app.visabud_multiplatform.ui.DocumentReviewScreen
 import online.visabud.app.visabud_multiplatform.ui.WelcomeScreen
 import online.visabud.app.visabud_multiplatform.ui.EmbassyLocatorScreen
@@ -76,7 +76,7 @@ private fun MainScreen(initialScreen: MainScreen, onNavigate: (MainScreen) -> Un
         topBar = {
             when (currentScreen) {
                 MainScreen.Home -> HomeHeader()
-                MainScreen.Tools -> TopAppBar(title = { Text("Tools") })
+                MainScreen.Saved -> TopAppBar(title = { Text("Saved") })
                 MainScreen.EmbassyLocator -> TopAppBar(title = { Text("Embassy Locator") })
                 MainScreen.CostCalculator -> TopAppBar(title = { Text("Cost Calculator") })
                 MainScreen.Settings -> TopAppBar(title = { Text("Settings") })
@@ -105,7 +105,7 @@ private fun MainScreen(initialScreen: MainScreen, onNavigate: (MainScreen) -> Un
         bottomBar = {
             if (currentScreen != MainScreen.Chat) {
                 BottomAppBar {
-                    val items = listOf(MainScreen.Home, MainScreen.Tools, MainScreen.Settings)
+                    val items = listOf(MainScreen.Home, MainScreen.Saved, MainScreen.Settings)
                     val icons =
                         listOf(Icons.Outlined.Home, Icons.Outlined.Construction, Icons.Outlined.Settings)
 
@@ -125,12 +125,7 @@ private fun MainScreen(initialScreen: MainScreen, onNavigate: (MainScreen) -> Un
             MainScreen.Home -> HomeScreen(
                 paddingValues,
                 onNavigateToChat = { currentScreen = MainScreen.Chat })
-            MainScreen.Tools -> ToolsScreen(
-                paddingValues,
-                onOpenDocumentReview = { currentScreen = MainScreen.DocumentReview },
-                onOpenEmbassyLocator = { currentScreen = MainScreen.EmbassyLocator },
-                onOpenCostCalculator = { currentScreen = MainScreen.CostCalculator }
-            )
+            MainScreen.Saved -> SavedScreen(paddingValues)
             MainScreen.Settings -> SettingsScreen(paddingValues, onOpenProfile = { currentScreen = MainScreen.Profile })
             MainScreen.Chat -> ChatScreen(paddingValues)
             MainScreen.DocumentReview -> DocumentReviewScreen(paddingValues)
@@ -148,7 +143,7 @@ private sealed class Screen {
 
 private enum class MainScreen {
     Home,
-    Tools,
+    Saved,
     Settings,
     Chat,
     DocumentReview,

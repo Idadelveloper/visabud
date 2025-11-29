@@ -66,6 +66,41 @@ class FileChatRepository : ChatRepository {
     }
 }
 
+class FileRoadmapRepository : RoadmapRepository {
+    private val mutex = Mutex()
+    private val file get() = baseDirOrNull()?.let { File(it, "roadmaps.json") }
+
+    @Serializable
+    private data class Wrap(val items: List<Roadmap>)
+
+    override suspend fun upsert(roadmap: Roadmap) { mutex.withLock {
+        val list = list().toMutableList()
+        val idx = list.indexOfFirst { it.id == roadmap.id }
+        if (idx >= 0) list[idx] = roadmap.copy(updatedAt = System.currentTimeMillis()) else list.add(roadmap)
+        persist(list)
+    } }
+
+    override suspend fun get(id: String): Roadmap? = mutex.withLock { list().firstOrNull { it.id == id } }
+
+    override suspend fun list(): List<Roadmap> = mutex.withLock {
+        val f = file ?: return@withLock emptyList()
+        if (!f.exists()) return@withLock emptyList()
+        runCatching { json.decodeFromString<Wrap>(f.readText()).items }
+            .getOrElse { emptyList() }
+            .sortedByDescending { it.updatedAt }
+    }
+
+    override suspend fun remove(id: String) { mutex.withLock {
+        val remaining = list().filterNot { it.id == id }
+        persist(remaining)
+    } }
+
+    private fun persist(list: List<Roadmap>) {
+        val f = file ?: return
+        f.writeText(json.encodeToString(Wrap(list)))
+    }
+}
+
 class FileEmbeddingRepository(private val maxEntries: Int = 500) : EmbeddingRepository {
     private val mutex = Mutex()
     private val file get() = baseDirOrNull()?.let { File(it, "embeddings.json") }

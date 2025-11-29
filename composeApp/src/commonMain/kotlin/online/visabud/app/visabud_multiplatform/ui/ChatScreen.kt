@@ -58,6 +58,25 @@ fun ChatScreen(paddingValues: PaddingValues) {
     var showBottomSheet by remember { mutableStateOf(false) }
     val sheetState = rememberModalBottomSheetState()
 
+    // Model download/loading indicator state
+    val client = remember { online.visabud.app.visabud_multiplatform.ai.aiChatClient() }
+    var isModelPreparing by remember { mutableStateOf(true) }
+
+    LaunchedEffect(Unit) {
+        // Prepare on-device model; show a loading bar while downloading/initializing
+        try {
+            val downloaded = runCatching { client.isModelDownloaded() }.getOrDefault(false)
+            if (!downloaded) {
+                isModelPreparing = true
+            }
+            runCatching { client.ensureReady() }.onFailure { 
+                // ignore; UI remains usable with cloud/null fallback if any
+            }
+        } finally {
+            isModelPreparing = false
+        }
+    }
+
     // Add a default welcome message
     LaunchedEffect(Unit) {
         if (messages.isEmpty()) {
@@ -92,19 +111,28 @@ fun ChatScreen(paddingValues: PaddingValues) {
             )
         }
     ) { innerPadding ->
-        LazyColumn(
-            state = listState,
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            items(messages) { msg ->
-                MessageBubble(msg)
+        Column(modifier = Modifier
+            .fillMaxSize()
+            .padding(innerPadding)) {
+            if (isModelPreparing) {
+                LinearProgressIndicator(modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp))
             }
-            if (isVisaBudTyping) {
-                item { TypingIndicator() }
+            LazyColumn(
+                state = listState,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(messages) { msg ->
+                    MessageBubble(msg)
+                }
+                if (isVisaBudTyping) {
+                    item { TypingIndicator() }
+                }
             }
         }
 

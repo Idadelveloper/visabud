@@ -9,5 +9,6 @@ actual fun ensureDataModuleInitialized() {
     DataModule.profiles = FileProfileRepository()
     DataModule.chats = FileChatRepository()
     DataModule.embeddings = FileEmbeddingRepository(maxEntries = 500)
-    // Keep documents/roadmaps in-memory for now; can be persisted later
+    DataModule.roadmaps = FileRoadmapRepository()
+    // Keep documents in-memory for now; can be persisted later
 }

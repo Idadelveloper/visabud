@@ -22,10 +22,10 @@ object EmbassyLocator {
 
     private val json = Json { ignoreUnknownKeys = true; isLenient = true; encodeDefaults = true; prettyPrint = false }
 
-    // ---- Data model ----
+    // ---- Data model (compat facade used by tools) ----
     @Serializable
     data class Mission(
-        val type: String, // Embassy | Consulate | High Commission | etc
+        val type: String, // embassy | consulate_general | consulate | consular_agency | honorary_consulate
         val city: String,
         val address: String,
         val phone: String? = null,
@@ -37,10 +37,109 @@ object EmbassyLocator {
 
     @Serializable
     data class EmbassyCountryEntry(
-        val code: String, // ISO alpha-2 (target country code)
+        val code: String, // ISO alpha-2 (target country code when available)
         val country: String,
         val missions: List<Mission> = emptyList()
     )
+
+    // ---- New schema DTOs (rooted file with diplomaticMissions) ----
+    @Serializable
+    private data class EmbassiesDb(
+        val version: String? = null,
+        val lastUpdated: String? = null,
+        val diplomaticMissions: List<DbMission>? = null
+    )
+
+    @Serializable
+    private data class DbMission(
+        val id: String? = null,
+        val missionType: String? = null,
+        val representingCountry: DbCountryRef? = null,
+        val hostCountry: DbCountryRef? = null,
+        val missionName: String? = null,
+        val officialTitle: String? = null,
+        val location: DbLocation? = null,
+        val contact: DbContact? = null,
+        val services: List<String>? = null
+    )
+
+    @Serializable
+    private data class DbCountryRef(
+        val countryName: String? = null,
+        val countryCode: String? = null,
+        val iso2: String? = null
+    )
+
+    @Serializable
+    private data class DbLocation(
+        val city: String? = null,
+        val state: String? = null,
+        val country: String? = null,
+        val address: DbAddress? = null,
+        val coordinates: DbCoordinates? = null
+    )
+
+    @Serializable
+    private data class DbAddress(
+        val city: String? = null,
+        val country: String? = null,
+        val postalCode: String? = null,
+        val fullAddress: String? = null
+    )
+
+    @Serializable
+    private data class DbCoordinates(
+        val latitude: Double? = null,
+        val longitude: Double? = null,
+        val precision: String? = null
+    )
+
+    @Serializable
+    private data class DbContact(
+        val phone: String? = null,
+        val email: String? = null,
+        val website: String? = null
+    )
+
+    // ---- Mapper from new DB schema to compat entries ----
+    private fun mapDbToCompat(db: EmbassiesDb): List<EmbassyCountryEntry> {
+        val missions = db.diplomaticMissions ?: emptyList()
+        if (missions.isEmpty()) return emptyList()
+        // Group missions by representingCountry (iso2 preferred)
+        val grouped = LinkedHashMap<String, MutableList<Pair<String, Mission>>>()
+        for (m in missions) {
+            val repName = m.representingCountry?.countryName ?: continue
+            val repIso2 = (m.representingCountry?.iso2 ?: m.representingCountry?.countryCode)?.uppercase()
+            val code = (repIso2?.takeIf { it.isNotBlank() } ?: repName.take(2).uppercase())
+            val city = m.location?.address?.city ?: m.location?.city ?: ""
+            val addr = m.location?.address?.fullAddress ?: listOfNotNull(city, m.location?.state, m.location?.country).filter { !it.isNullOrBlank() }.joinToString(", ")
+            val lat = m.location?.coordinates?.latitude
+            val lon = m.location?.coordinates?.longitude
+            val type = (m.missionType ?: m.officialTitle ?: m.missionName ?: "mission").trim().lowercase()
+            val phone = m.contact?.phone
+            val email = m.contact?.email
+            val website = m.contact?.website
+            val compat = Mission(
+                type = type,
+                city = city.ifBlank { m.location?.country ?: repName },
+                address = addr.ifBlank { city },
+                phone = phone,
+                email = email,
+                website = website,
+                lat = lat,
+                lon = lon
+            )
+            val list = grouped.getOrPut(code) { mutableListOf() }
+            list += (repName to compat)
+        }
+        val out = mutableListOf<EmbassyCountryEntry>()
+        for ((code, pairs) in grouped) {
+            val countryName = pairs.firstOrNull()?.first ?: code
+            val missionsList = pairs.map { it.second }
+            out += EmbassyCountryEntry(code = code, country = countryName, missions = missionsList)
+        }
+        return out
+    }
 
     // ---- Query DTOs ----
     data class QueryResult(
@@ -91,8 +190,16 @@ object EmbassyLocator {
     private suspend fun ensureLoaded() {
         if (ready && entries.isNotEmpty()) return
         val bytes = Res.readBytes(RESOURCE_PATH)
-        // JSON is an array
-        entries = json.decodeFromString(bytes.decodeToString())
+        val text = bytes.decodeToString()
+        // Try new root schema first
+        entries = try {
+            val db: EmbassiesDb = json.decodeFromString(text)
+            val mapped = mapDbToCompat(db)
+            if (mapped.isNotEmpty()) mapped else throw IllegalStateException("empty mapped")
+        } catch (_: Throwable) {
+            // Fallback: legacy flat array of EmbassyCountryEntry
+            try { json.decodeFromString(text) } catch (_: Throwable) { emptyList() }
+        }
         ready = true
     }
 

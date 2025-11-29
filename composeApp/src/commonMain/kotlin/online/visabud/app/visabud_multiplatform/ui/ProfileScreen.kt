@@ -7,11 +7,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
@@ -19,14 +15,11 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.TopAppBar
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -36,11 +29,12 @@ import online.visabud.app.visabud_multiplatform.data.UserProfile
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SettingsScreen(paddingValues: PaddingValues, onOpenProfile: () -> Unit = {}) {
+fun ProfileScreen(paddingValues: PaddingValues, onBack: (() -> Unit)? = null) {
     val scope = remember { CoroutineScope(Dispatchers.Main) }
     val snackbar = remember { SnackbarHostState() }
 
     var profile by remember { mutableStateOf<UserProfile?>(null) }
+    var editMode by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         profile = DataModule.profiles.getProfile() ?: UserProfile()
@@ -51,6 +45,7 @@ fun SettingsScreen(paddingValues: PaddingValues, onOpenProfile: () -> Unit = {})
         scope.launch {
             DataModule.profiles.upsertProfile(p.copy(lastSeen = 0L))
             snackbar.showSnackbar("Profile saved")
+            editMode = false
         }
     }
 
@@ -59,28 +54,37 @@ fun SettingsScreen(paddingValues: PaddingValues, onOpenProfile: () -> Unit = {})
             .fillMaxSize()
             .padding(paddingValues)
     ) {
-        TopAppBar(title = { Text("Settings") })
+        TopAppBar(title = { Text("Profile") }, navigationIcon = {
+            if (onBack != null) {
+                TextButton(onClick = { onBack() }) { Text("Back") }
+            }
+        })
+
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text("Your Profile", style = MaterialTheme.typography.titleLarge)
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Button(onClick = onOpenProfile) { Text("Open Profile Page") }
-                        }
+            Text("Your Details", style = MaterialTheme.typography.titleLarge.copy(fontWeight = FontWeight.SemiBold))
             val p = profile
-            if (p != null) {
-                ProfileEditor(p) { updated -> profile = updated }
-                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Button(onClick = { saveProfile() }) { Text("Save") }
+            if (p == null) {
+                Text("Loading profile…")
+            } else {
+                if (editMode) {
+                    EditableProfile(p) { updated -> profile = updated }
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(onClick = { saveProfile() }) { Text("Save") }
+                        TextButton(onClick = { editMode = false }) { Text("Cancel") }
+                    }
+                } else {
+                    ReadOnlyProfile(p)
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(onClick = { editMode = true }) { Text("Edit Profile") }
+                    }
                 }
                 Divider()
-                Text("Saved Documents", style = MaterialTheme.typography.titleMedium)
-                SavedDocsList(p.savedDocs)
-            } else {
-                Text("Loading profile…")
+                Text("Tip: This profile is stored locally and helps personalize your visa advice.", color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
         SnackbarHost(hostState = snackbar)
@@ -88,7 +92,28 @@ fun SettingsScreen(paddingValues: PaddingValues, onOpenProfile: () -> Unit = {})
 }
 
 @Composable
-private fun ProfileEditor(p: UserProfile, onChange: (UserProfile) -> Unit) {
+private fun ReadOnlyProfile(p: UserProfile) {
+    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+        @Composable
+        fun line(label: String, value: String?) {
+            Text("$label: ${value?.ifBlank { "—" } ?: "—"}")
+        }
+        line("Name", p.name)
+        line("Date of birth", p.dob)
+        line("Nationality", p.nationality)
+        line("Residence", p.countryOfResidence)
+        line("Current visa", p.currentVisa)
+        line("Education", p.education)
+        line("Work years", p.workYears?.toString())
+        line("Languages", p.languages)
+        line("Finances", p.finances)
+        line("Work status", p.workStatus)
+        line("Passport expiry", p.passportExpiry)
+    }
+}
+
+@Composable
+private fun EditableProfile(p: UserProfile, onChange: (UserProfile) -> Unit) {
     Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
         OutlinedTextField(
             value = p.name ?: "",
@@ -150,28 +175,11 @@ private fun ProfileEditor(p: UserProfile, onChange: (UserProfile) -> Unit) {
             label = { Text("Work status") },
             modifier = Modifier.fillMaxWidth()
         )
-    }
-}
-
-@Composable
-private fun SavedDocsList(ids: List<String>) {
-    if (ids.isEmpty()) {
-        Text("No documents saved yet.", color = MaterialTheme.colorScheme.onSurfaceVariant)
-        return
-    }
-    LazyColumn(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-        items(ids) { id ->
-            SavedDocCard(id)
-        }
-    }
-}
-
-@Composable
-private fun SavedDocCard(id: String) {
-    Card(colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)) {
-        Column(Modifier.padding(12.dp), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text("Document ID: $id", style = MaterialTheme.typography.titleSmall)
-            // In a fuller impl, we could fetch DocumentMeta by id and show filename/type
-        }
+        OutlinedTextField(
+            value = p.passportExpiry ?: "",
+            onValueChange = { onChange(p.copy(passportExpiry = it)) },
+            label = { Text("Passport expiry (YYYY-MM-DD)") },
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }

@@ -63,6 +63,7 @@ object ChatAgent {
             IntentKind.EMBASSY -> "embassy locator"
             IntentKind.COMPARE -> "comparison"
             IntentKind.VISA_TYPE -> "visa type suggestion"
+            IntentKind.ELIGIBILITY -> "eligibility check"
             IntentKind.FACTS -> "visa facts"
             IntentKind.GENERIC -> null
         }
@@ -85,6 +86,7 @@ object ChatAgent {
             IntentKind.EMBASSY -> handleEmbassy(profile, text)
             IntentKind.COMPARE -> handleCompare(profile, text)
             IntentKind.VISA_TYPE -> handleVisaType(profile, text)
+            IntentKind.ELIGIBILITY -> handleEligibility(profile, text)
             IntentKind.FACTS -> handleFacts(profile, text)
             IntentKind.GENERIC -> handleGeneric(profile, text, options)
         }
@@ -153,9 +155,36 @@ object ChatAgent {
         val duration = extractDurationMonths(text)
         val prompt = CostEstimator.buildMissingInfoPrompt(profile, destination, goal, duration)
         if (prompt != null) return AgentReply(replyText = prompt, prompt = prompt, toolUsed = "cost", warnings = genericWarnings())
+
+        // Try database-backed fees calculation when user mentions a specific visa type ID (e.g., AUS-186, H-1B, UK-Student)
+        val visaTypeId = extractVisaTypeId(text)
+        val dbEstimate = try {
+            if (!visaTypeId.isNullOrBlank()) CostEstimator.estimateUsingFeesDb(profile, destination, visaTypeId) else null
+        } catch (_: Throwable) { null }
+        if (dbEstimate != null) {
+            val humanDb = CostEstimator.buildHumanReadable(dbEstimate) + appendDisclaimer()
+            return AgentReply(replyText = humanDb, toolUsed = "cost", jsonPayload = CostEstimator.toJson(dbEstimate), citations = dbEstimate.citations, warnings = genericWarnings())
+        }
+
+        // Fallback to heuristic estimator
         val est = CostEstimator.estimate(profile, destination, goal, duration)
         val human = CostEstimator.buildHumanReadable(est) + appendDisclaimer()
         return AgentReply(replyText = human, toolUsed = "cost", jsonPayload = CostEstimator.toJson(est), citations = est.citations, warnings = genericWarnings())
+    }
+
+    private fun extractVisaTypeId(text: String): String? {
+        val low = text.lowercase()
+        // Common patterns: AUS-186, H-1B, F-1, UK-Student, 186 visa
+        Regex("[A-Z]{2,3}-\\d{2,3}").find(text)?.let { return it.value }
+        Regex("[A-Z]-\\dB").find(text)?.let { return it.value.uppercase() } // H-1B like
+        Regex("\\bH-?1B\\b", RegexOption.IGNORE_CASE).find(text)?.let { return "H-1B" }
+        // UK Student or similar
+        if (low.contains("skilled worker")) return "UK-SW"
+        if (low.contains("student")) return "UK-Student"
+        // numeric id with country e.g., "186 visa in Australia"
+        val num = Regex("\\b(\\d{3})\\b").find(text)?.groupValues?.getOrNull(1)
+        if (num != null && (low.contains("australia") || low.contains("au "))) return "AUS-$num"
+        return null
     }
 
     private suspend fun handleEmbassy(profile: UserProfile, text: String): AgentReply {
@@ -201,7 +230,10 @@ object ChatAgent {
         return if (embedder != null) {
             try {
                 VisaFactsRag.ensurePersisted(embedder)
-                val facts = VisaFactsRag.retrieveFromRepo(text, embedder, topK = 4)
+                val destination = extractDestination(text)
+                val goal = extractVisaType(text)
+                val filters = VisaFactsRag.buildFilters(profile, destination, goal)
+                val facts = VisaFactsRag.retrieveHybrid(text, embedder, filters, topK = 6)
                 val sys = VisaFactsRag.buildSystemPreamble(facts)
                 val user = buildString {
                     appendLine("User question: ${text}")
@@ -234,8 +266,20 @@ object ChatAgent {
         }
     }
 
+    // ----- Eligibility handler -----
+    private suspend fun handleEligibility(profile: UserProfile, text: String): AgentReply {
+        val destination = extractDestination(text)
+        val visaType = extractVisaType(text)
+        val prompt = EligibilityTool.buildMissingInfoPrompt(profile, destination, visaType)
+        if (prompt != null) return AgentReply(replyText = prompt, prompt = prompt, toolUsed = "eligibility", warnings = genericWarnings())
+        val a = EligibilityTool.assess(profile, destination, visaType)
+        val human = EligibilityTool.buildHumanReadable(a) + appendDisclaimer()
+        val cites = if (a.citations.isNotEmpty()) a.citations else listOfNotNull(a.officialLink)
+        return AgentReply(replyText = human, toolUsed = "eligibility", jsonPayload = EligibilityTool.toJson(a), citations = cites, warnings = genericWarnings())
+    }
+
     // --------- Intent detection ---------
-    private enum class IntentKind { CHECKLIST, ROADMAP, COST, EMBASSY, COMPARE, VISA_TYPE, FACTS, GENERIC }
+    private enum class IntentKind { CHECKLIST, ROADMAP, COST, EMBASSY, COMPARE, VISA_TYPE, ELIGIBILITY, FACTS, GENERIC }
     private data class Intent(val kind: IntentKind)
 
     private fun detectIntent(text: String): Intent {
@@ -247,6 +291,7 @@ object ChatAgent {
             listOf("embassy", "consulate", "where can i apply", "nearest", "closest").any { low.contains(it) } -> Intent(IntentKind.EMBASSY)
             listOf("which visa", "what visa", "visa type", "category", "conference").any { low.contains(it) } -> Intent(IntentKind.VISA_TYPE)
             listOf("compare", "easier", "vs ", "versus", "schengen").any { low.contains(it) } -> Intent(IntentKind.COMPARE)
+            listOf("eligible", "eligibility", "qualify", "qualified", "meet requirements", "am i eligible", "do i qualify").any { low.contains(it) } -> Intent(IntentKind.ELIGIBILITY)
             listOf("visa requirement", "need a visa", "do i need a visa", "visa-free", "requirements for").any { low.contains(it) } -> Intent(IntentKind.FACTS)
             else -> Intent(IntentKind.GENERIC)
         }

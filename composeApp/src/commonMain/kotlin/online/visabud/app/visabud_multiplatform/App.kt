@@ -6,7 +6,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Message
 import androidx.compose.material.icons.outlined.Construction
 import androidx.compose.material.icons.outlined.Home
-import androidx.compose.material.icons.outlined.Person
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -33,6 +33,7 @@ import online.visabud.app.visabud_multiplatform.ui.WelcomeScreen
 import online.visabud.app.visabud_multiplatform.ui.EmbassyLocatorScreen
 import online.visabud.app.visabud_multiplatform.ui.CostCalculatorScreen
 import online.visabud.app.visabud_multiplatform.ui.SettingsScreen
+import online.visabud.app.visabud_multiplatform.ui.ProfileScreen
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 
@@ -79,6 +80,7 @@ private fun MainScreen(initialScreen: MainScreen, onNavigate: (MainScreen) -> Un
                 MainScreen.EmbassyLocator -> TopAppBar(title = { Text("Embassy Locator") })
                 MainScreen.CostCalculator -> TopAppBar(title = { Text("Cost Calculator") })
                 MainScreen.Settings -> TopAppBar(title = { Text("Settings") })
+                MainScreen.Profile -> TopAppBar(title = { Text("Profile") })
                 MainScreen.DocumentReview -> TopAppBar(title = { Text("Document Review") })
                 MainScreen.Chat -> TopAppBar(
                     title = { Text("VisaBud Chat") }, 
@@ -105,7 +107,7 @@ private fun MainScreen(initialScreen: MainScreen, onNavigate: (MainScreen) -> Un
                 BottomAppBar {
                     val items = listOf(MainScreen.Home, MainScreen.Tools, MainScreen.Settings)
                     val icons =
-                        listOf(Icons.Outlined.Home, Icons.Outlined.Construction, Icons.Outlined.Person)
+                        listOf(Icons.Outlined.Home, Icons.Outlined.Construction, Icons.Outlined.Settings)
 
                     items.forEachIndexed { index, screen ->
                         NavigationBarItem(
@@ -129,11 +131,12 @@ private fun MainScreen(initialScreen: MainScreen, onNavigate: (MainScreen) -> Un
                 onOpenEmbassyLocator = { currentScreen = MainScreen.EmbassyLocator },
                 onOpenCostCalculator = { currentScreen = MainScreen.CostCalculator }
             )
-            MainScreen.Settings -> SettingsScreen(paddingValues)
+            MainScreen.Settings -> SettingsScreen(paddingValues, onOpenProfile = { currentScreen = MainScreen.Profile })
             MainScreen.Chat -> ChatScreen(paddingValues)
             MainScreen.DocumentReview -> DocumentReviewScreen(paddingValues)
             MainScreen.EmbassyLocator -> EmbassyLocatorScreen(paddingValues)
             MainScreen.CostCalculator -> CostCalculatorScreen(paddingValues)
+            MainScreen.Profile -> ProfileScreen(paddingValues, onBack = { currentScreen = MainScreen.Settings })
         }
     }
 }
@@ -150,5 +153,6 @@ private enum class MainScreen {
     Chat,
     DocumentReview,
     EmbassyLocator,
-    CostCalculator
+    CostCalculator,
+    Profile
 }

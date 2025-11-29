@@ -189,15 +189,24 @@ object ProfileBuilderTool {
 
     private fun detectNationality(t: String): String? {
         // Examples: "I'm Indian", "My nationality is Nigerian", "I hold a UK passport"
+        // Only accept if the extracted token maps to a known country/demonym; avoid capturing adjectives like "broke".
         val patterns = listOf(
-            Regex("(?i)(?:i am|i'm|my nationality is|nationality:)\\s*([A-Za-z]{3,})"),
-            Regex("(?i)(?:passport|citizenship)\\s*(?:is|:)?\\s*([A-Za-z]{3,})"),
-            Regex("(?i)from\\s+([A-Za-z]{3,})\\b.*passport")
+            Regex("(?i)(?:my nationality is|nationality:)\\s*([A-Za-z][A-Za-z .'-]{2,})"),
+            Regex("(?i)(?:citizenship|passport(?:\\s*holder)?(?:ship)?)\\s*(?:is|:)?\\s*([A-Za-z][A-Za-z .'-]{2,})"),
+            Regex("(?i)\\b(i am|i'm|i am a|i'm a)\\s+([A-Za-z][A-Za-z .'-]{2,})\\b(?:\\s+citizen|\\s+national)?")
         )
         for (r in patterns) {
             val m = r.find(t)
-            val g = m?.groupValues?.getOrNull(1)
-            if (!g.isNullOrBlank()) return normalizeCountry(g)
+            val candidate = m?.groupValues?.lastOrNull()?.trim()
+            val normalized = normalizeCountry(candidate ?: "")
+            if (isValidNationality(normalized)) return normalized
+        }
+        // Also accept two-word country mentions like "United Kingdom", "United States" near passport keywords
+        val nearPassport = Regex("(?i)(united kingdom|united states|south africa|new zealand|saudi arabia)")
+        val m2 = nearPassport.find(t)
+        if (m2 != null) {
+            val norm = normalizeCountry(m2.value)
+            if (isValidNationality(norm)) return norm
         }
         return null
     }
@@ -279,9 +288,27 @@ object ProfileBuilderTool {
             "indian" to "India", "india" to "India",
             "nigerian" to "Nigeria", "nigeria" to "Nigeria",
             "german" to "Germany", "germany" to "Germany",
-            "french" to "France", "france" to "France"
+            "french" to "France", "france" to "France",
+            "canadian" to "Canada", "canada" to "Canada",
+            "australian" to "Australia", "australia" to "Australia"
         )
         return map[key] ?: s.trim()
+    }
+
+    private fun isValidNationality(s: String?): Boolean {
+        if (s.isNullOrBlank()) return false
+        val bad = setOf("broke", "poor", "student", "worker", "employed", "unemployed", "engineer")
+        val cleaned = s.trim().lowercase()
+        if (cleaned in bad) return false
+        // Accept if in a small whitelist of country names
+        val countries = setOf(
+            "united kingdom", "united states", "canada", "australia", "germany", "france", "india", "nigeria", "united arab emirates", "japan", "south africa"
+        )
+        if (countries.contains(cleaned)) return true
+        // Accept if looks like a demonym we map above
+        val demonyms = setOf("british", "american", "canadian", "australian", "german", "french", "indian", "nigerian", "emirati", "japanese", "south african")
+        if (demonyms.contains(cleaned)) return true
+        return false
     }
 
     // Basic date normalization (ISO yyyy-MM-dd) used elsewhere in project

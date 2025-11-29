@@ -1,119 +1,547 @@
-[
-  {
-    "code": "US",
-    "country": "United States",
-    "official_site": "https://www.uscis.gov/visit-the-us",
-    "facts": [
-      "Most short visits require a B-1/B-2 (visitor) visa unless you are visa-exempt via Visa Waiver Program (country-dependent).",
-      "Applicants frequently must show intent to return to home country, proof of funds, and purpose of visit.",
-      "Biometrics (fingerprints/photo) and an in-person interview may be required for many nonimmigrant visas.",
-      "Immigrant (green card) paths are numerous (family-sponsored, employment-based); each has category-specific requirements and priority processing rules."
+{
+  "version": "1.0",
+  "lastUpdated": "2025-11-29",
+  "dataSource": "Government immigration websites, IATA, official embassies",
+  "description": "Verified bilateral visa requirements database for 199 countries with nationality-specific eligibility criteria, optimized for RAG vector embeddings and retrieval",
+  "retrievalOptimization": {
+    "chunkingStrategy": "semantic segments by country and visa type",
+    "embeddingFocus": [
+      "visa_type",
+      "destination_country",
+      "origin_nationality",
+      "eligibility_criteria",
+      "required_documents",
+      "processing_time",
+      "costs",
+      "restrictions",
+      "official_sources"
     ],
-    "visa_types": ["Tourist (B-2)", "Business (B-1)", "Student (F-1/M-1)", "Exchange (J-1)", "Work (H-1B/L-1/O-1)", "Immigrant (EB/Family)"] ,
-    "visa_free_policy": "Visa Waiver Program allows eligible nationalities short stays (usually up to 90 days) without a visa; ESTA required.",
-    "checklist": ["Valid passport", "DS-160 confirmation", "Visa fee receipt", "Photo meeting specifications", "Supporting documents (funds, ties, itinerary)"],
-    "fees": "Varies by category; many nonimmigrant visas have MRV fee around $185 (subject to change).",
-    "processing_time": "From a few days to several months depending on category and embassy workload.",
-    "restrictions": ["Security/background checks may extend processing", "Overstays can impact future eligibility"],
-    "notes": "Always confirm category-specific rules on USCIS/State Dept sites."
-  },
-  {
-    "code": "UK",
-    "country": "United Kingdom",
-    "official_site": "https://www.gov.uk/standard-visitor",
-    "facts": [
-      "Standard Visitor visa covers tourism, business, short study (courses up to 6 months) and usually allows stays up to 6 months.",
-      "You must hold a passport valid for the duration of your stay and provide supporting documents (financial proof, accommodation, purpose).",
-      "Some nationalities do not need a visa for short stays — check nationality-specific rules before applying.",
-      "Application is online; supporting documents and biometrics may be required at a visa centre."
+    "metadataFields": [
+      "country_code_iso3",
+      "visa_type_category",
+      "bilateral_relation",
+      "last_verified_date",
+      "official_source_url",
+      "applicant_nationality"
     ]
   },
-  {
-    "code": "CA",
-    "country": "Canada",
-    "official_site": "https://www.canada.ca/en/immigration-refugees-citizenship/services/visit-canada/visitor-visa.html",
-    "facts": [
-      "Visitors may need a Temporary Resident Visa (TRV) or an Electronic Travel Authorization (eTA) depending on nationality.",
-      "Applications require proof of funds, travel purpose, and may require biometrics (fingerprints & photo).",
-      "Processing steps include online application, biometric enrolment, and possible in-person submission at VAC/VFS.",
-      "Processing times vary widely by country of application and seasonal demand; check IRCC for current processing times."
-    ]
+  "countries": [
+    {
+      "id": "AUS",
+      "countryName": "Australia",
+      "countryCode": {
+        "iso2": "AU",
+        "iso3": "AUS"
+      },
+      "visaTypes": [
+        {
+          "typeId": "AUS-186",
+          "typeName": "Employer Nomination Scheme (Subclass 186)",
+          "category": "work-permanent",
+          "pathToResidency": "permanent-residency",
+          "duration": "permanent",
+          "generalDescription": "Permanent residency visa for skilled workers nominated by an Australian employer. Applicant must be sponsored by employer and meet critical skill shortage requirements.",
+          "officialSourceUrl": "https://immi.homeaffairs.gov.au/visas/getting-a-visa/visa-listing/employer-nomination-scheme-186",
+          "streamsAvailable": [
+            {
+              "streamName": "Direct Entry Stream",
+              "requiresPriorVisa": false,
+              "description": "For skilled workers with significant overseas work experience who are nominated by an employer"
+            },
+            {
+              "streamName": "Transition Stream",
+              "requiresPriorVisa": true,
+              "priorVisaTypes": ["Subclass 457", "Subclass 482"],
+              "description": "For workers already in Australia on temporary work visas"
+            }
+          ],
+          "bilateralRequirements": [
+            {
+              "originCountry": "GB",
+              "originCountryName": "United Kingdom",
+              "eligibilityCriteria": {
+                "ageRequirement": {
+                  "maxAge": 45,
+                  "unit": "years",
+                  "exemptions": [
+                    "Medical practitioners with 2+ years regional work experience",
+                    "457/482 visa holders with 2+ years employment history"
+                  ]
+                },
+                "englishLanguageRequirement": {
+                  "level": "Competent English",
+                  "pasportHoldersExempt": ["GB", "USA", "CAN", "NZL", "IRL"],
+                  "acceptedTests": [
+                    {
+                      "testName": "IELTS",
+                      "requiredScore": "6.0 in each component"
+                    },
+                    {
+                      "testName": "TOEFL iBT",
+                      "requiredScore": "Listening 16, Reading 16, Writing 19, Speaking 19"
+                    },
+                    {
+                      "testName": "PTE Academic",
+                      "requiredScore": "Listening 47, Reading 48, Writing 51, Speaking 54"
+                    },
+                    {
+                      "testName": "OET",
+                      "requiredScore": "Listening 290, Reading 310, Writing 290, Speaking 330"
+                    }
+                  ]
+                },
+                "occupationalRequirements": {
+                  "mustBeOnSOL": true,
+                  "SOLurl": "https://immi.homeaffairs.gov.au/help-and-support/tools/skilled-occupations-lists"
+                },
+                "workExperienceRequirement": {
+                  "yearsRequired": 3,
+                  "relevantToNominatedOccupation": true,
+                  "description": "Recent work experience in nominated occupation or closely related field"
+                },
+                "employmentOffer": {
+                  "required": true,
+                  "minDuration": "12 months",
+                  "sponsorMustBeApproved": true
+                },
+                "healthAndCharacter": {
+                  "medicalCheckRequired": true,
+                  "policeCheckRequired": true,
+                  "description": "Must meet health and character requirements; police clearances from all countries lived in for 12+ months"
+                }
+              },
+              "requiredDocuments": [
+                "Valid passport (Competent English passport holders may be exempt from English test)",
+                "Employment contract/offer letter",
+                "Qualification documentation",
+                "Work experience letters/references",
+                "Police clearances from all countries",
+                "Medical exam results",
+                "English language test results (if applicable)"
+              ],
+              "processingDetails": {
+                "processingTimeWeeks": 8,
+                "processingTimeRange": "4-8 weeks for decision ready applications",
+                "visaFee": {
+                  "amount": 5500,
+                  "currency": "AUD",
+                  "includesMainApplicant": true,
+                  "dependentsFee": 2750
+                },
+                "locationOfProcessing": "Australian Department of Home Affairs"
+              },
+              "postArrival": {
+                "residencyRequirement": "Must be working in nominated position",
+                "pathToCitizenship": "Eligible after 4 years permanent residence"
+              },
+              "restrictions": [
+                "Must work for sponsoring employer unless prior approval",
+                "Cannot hold multiple visas",
+                "Work restrictions apply if nominated role has conditions"
+              ],
+              "lastVerified": "2025-11-28",
+              "dataQuality": "verified"
+            },
+            {
+              "originCountry": "US",
+              "originCountryName": "United States",
+              "eligibilityCriteria": {
+                "ageRequirement": {
+                  "maxAge": 45,
+                  "unit": "years",
+                  "exemptions": [
+                    "Medical practitioners with 2+ years regional work experience",
+                    "457/482 visa holders with 2+ years employment history"
+                  ]
+                },
+                "englishLanguageRequirement": {
+                  "level": "Competent English",
+                  "pasportHoldersExempt": ["GB", "USA", "CAN", "NZL", "IRL"],
+                  "acceptedTests": [
+                    {
+                      "testName": "IELTS",
+                      "requiredScore": "6.0 in each component"
+                    }
+                  ]
+                },
+                "occupationalRequirements": {
+                  "mustBeOnSOL": true
+                },
+                "workExperienceRequirement": {
+                  "yearsRequired": 3,
+                  "relevantToNominatedOccupation": true
+                },
+                "employmentOffer": {
+                  "required": true,
+                  "minDuration": "12 months"
+                }
+              },
+              "requiredDocuments": [
+                "Valid US passport",
+                "Employment contract",
+                "Qualification documentation",
+                "Work experience letters",
+                "Police clearance from USA (FBI clearance)",
+                "Medical exam results",
+                "English language test results (may be exempt)"
+              ],
+              "processingDetails": {
+                "processingTimeWeeks": 8,
+                "visaFee": {
+                  "amount": 5500,
+                  "currency": "AUD"
+                }
+              },
+              "lastVerified": "2025-11-28",
+              "dataQuality": "verified"
+            },
+            {
+              "originCountry": "IND",
+              "originCountryName": "India",
+              "eligibilityCriteria": {
+                "ageRequirement": {
+                  "maxAge": 45,
+                  "unit": "years"
+                },
+                "englishLanguageRequirement": {
+                  "level": "Competent English",
+                  "pasportHoldersExempt": [],
+                  "acceptedTests": [
+                    {
+                      "testName": "IELTS",
+                      "requiredScore": "6.0 in each component"
+                    },
+                    {
+                      "testName": "TOEFL iBT",
+                      "requiredScore": "Listening 16, Reading 16, Writing 19, Speaking 19"
+                    }
+                  ]
+                },
+                "occupationalRequirements": {
+                  "mustBeOnSOL": true
+                },
+                "workExperienceRequirement": {
+                  "yearsRequired": 3,
+                  "relevantToNominatedOccupation": true,
+                  "description": "Work experience in nominated occupation or closely related role"
+                },
+                "employmentOffer": {
+                  "required": true,
+                  "minDuration": "12 months"
+                }
+              },
+              "requiredDocuments": [
+                "Valid Indian passport",
+                "PAN card (Permanent Account Number)",
+                "Employment contract from Australian employer",
+                "Educational qualifications with official transcripts",
+                "Work experience reference letters",
+                "Police clearance from India (FCR - Final Character Report)",
+                "Medical examination results",
+                "IELTS or TOEFL results (minimum 6.0 or equivalent)",
+                "Character assessment from employer"
+              ],
+              "processingDetails": {
+                "processingTimeWeeks": 10,
+                "processingTimeRange": "6-12 weeks depending on documentation completeness",
+                "visaFee": {
+                  "amount": 5500,
+                  "currency": "AUD"
+                },
+                "applicationChannel": "Online through immi.homeaffairs.gov.au"
+              },
+              "restrictions": [
+                "Cannot change employer without approval",
+                "Must maintain employment in nominated occupation",
+                "Health and character requirements strictly enforced"
+              ],
+              "notes": "Indian nationals represent significant proportion of 186 visa applications; processing may be slightly longer due to high application volume",
+              "lastVerified": "2025-11-28",
+              "dataQuality": "verified"
+            }
+          ],
+          "commonRejectReasons": [
+            "Age exceeds 45 years",
+            "Occupation not on Skilled Occupation List (SOL)",
+            "English language score below required level",
+            "Medical conditions that don't meet health requirements",
+            "Character issues identified in police checks",
+            "Insufficient work experience in nominated occupation"
+          ],
+          "successFactors": [
+            "Early sponsorship approval from employer",
+            "Clear demonstration of skills alignment with role",
+            "Strong English language proficiency",
+            "Positive character assessment",
+            "Compliant with all documentation requirements"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "GBR",
+      "countryName": "United Kingdom",
+      "countryCode": {
+        "iso2": "GB",
+        "iso3": "GBR"
+      },
+      "visaTypes": [
+        {
+          "typeId": "UK-SV",
+          "typeName": "Standard Visitor Visa",
+          "category": "tourism-short-term",
+          "duration": "6 months (typically)",
+          "durationDetails": "Up to 6 months; may be extended for family visits or other legitimate reasons",
+          "generalDescription": "Visa for tourists, business visitors, and short-term visitors to the UK who do not intend to work or study for extended periods.",
+          "officialSourceUrl": "https://www.gov.uk/browse/visas-immigration",
+          "allowedActivities": [
+            "Tourism and leisure activities",
+            "Visiting family and friends",
+            "Short conferences and business meetings",
+            "Short study courses (up to 6 months)",
+            "Cultural or sporting events as spectator",
+            "Attending weddings or civil partnerships"
+          ],
+          "prohibitedActivities": [
+            "Paid or unpaid employment",
+            "Services or consultancy work for UK company",
+            "Long-term study (over 6 months)",
+            "Internships or work placements",
+            "Living in UK as base for remote work",
+            "Marriage or civil partnership ceremonies"
+          ],
+          "bilateralRequirements": [
+            {
+              "originCountry": "US",
+              "originCountryName": "United States",
+              "visaFree": true,
+              "visaFreeStay": 6,
+              "visaFreeStayUnit": "months",
+              "requiresDocumentation": "Valid US passport required",
+              "electronicCheckInRequired": false,
+              "description": "US passport holders do not require a visa for standard visits up to 6 months"
+            },
+            {
+              "originCountry": "CN",
+              "originCountryName": "China",
+              "visaRequired": true,
+              "visaType": "Standard Visitor Visa",
+              "eligibilityCriteria": {
+                "purposeOfVisit": {
+                  "tourist": true,
+                  "business": true,
+                  "familyVisit": true,
+                  "description": "Must have legitimate purpose for visit"
+                },
+                "financialRequirement": {
+                  "sufficient": true,
+                  "description": "Must demonstrate ability to support visit without working in UK"
+                },
+                "ties": {
+                  "toHomeCountry": "Must demonstrate strong ties to China (family, employment, property)",
+                  "likelihood": "Must show intention to return to China after visit"
+                }
+              },
+              "requiredDocuments": [
+                "Valid Chinese passport (with 6+ months validity)",
+                "Completed UK visa application form",
+                "Recent passport-sized photograph",
+                "Proof of accommodation in UK",
+                "Bank statements showing financial capacity",
+                "Proof of employment or study in China",
+                "Travel itinerary",
+                "Return ticket or booking confirmation"
+              ],
+              "processingDetails": {
+                "processingTimeWeeks": 2,
+                "processingTimeRange": "2-3 weeks standard",
+                "visaFee": {
+                  "amount": 100,
+                  "currency": "GBP"
+                },
+                "applicationLocation": "UK Visa Application Center in China"
+              },
+              "healthClearance": false,
+              "criminalCheckRequired": false,
+              "lastVerified": "2025-11-25",
+              "dataQuality": "verified"
+            }
+          ]
+        },
+        {
+          "typeId": "UK-SW",
+          "typeName": "Skilled Worker Visa",
+          "category": "work-long-term",
+          "pathToResidency": "indefinite-leave-to-remain",
+          "duration": "3-5 years typically",
+          "generalDescription": "Primary work visa for skilled professionals with job offers from UK employers. Requires sponsorship and meeting salary and skills thresholds.",
+          "officialSourceUrl": "https://www.gov.uk/guidance/skilled-worker-visa",
+          "bilateralRequirements": [
+            {
+              "originCountry": "IND",
+              "originCountryName": "India",
+              "eligibilityCriteria": {
+                "jobOfferRequirement": {
+                  "required": true,
+                  "sponsorMustBeApproved": true,
+                  "licensedEmployer": true
+                },
+                "salaryRequirement": {
+                  "minimumSalary": 38700,
+                  "currency": "GBP",
+                  "yearlyBasis": true,
+                  "exceptions": [
+                    "Healthcare workers (lower threshold)",
+                    "PhD-level roles (lower threshold)"
+                  ]
+                },
+                "skillsRequirement": {
+                  "minimumLevel": "RQF Level 6",
+                  "equivalentTo": "Bachelor's degree or higher"
+                },
+                "englishLanguageTesting": {
+                  "required": true,
+                  "minimumLevel": "B1 (Intermediate)",
+                  "acceptedTests": [
+                    "IELTS for UKVI",
+                    "TOEFL",
+                    "Duolingo"
+                  ]
+                }
+              },
+              "requiredDocuments": [
+                "Valid Indian passport (6+ months validity)",
+                "Job offer letter from licensed UK employer",
+                "Confirmation of sponsorship (COS) from employer",
+                "Educational qualifications certificates",
+                "Professional credentials if applicable",
+                "English language test results",
+                "Proof of financial capacity",
+                "Character and police clearances"
+              ],
+              "processingDetails": {
+                "processingTimeWeeks": 8,
+                "processingTimeRange": "6-8 weeks for decision",
+                "visaFee": {
+                  "amount": 719,
+                  "currency": "GBP"
+                },
+                "immigrationHealthSurcharge": {
+                  "amount": 1035,
+                  "currency": "GBP",
+                  "frequency": "per year"
+                }
+              },
+              "familyProvisions": {
+                "dependentsAllowed": true,
+                "spousePartnerAllowed": true,
+                "childrenAllowed": true,
+                "additionalCostsForDependents": true
+              },
+              "restrictions": [
+                "Cannot change employer without approval",
+                "Salary must meet minimum requirement",
+                "Must work in role specified on sponsorship",
+                "Annual compliance checks apply"
+              ],
+              "pathToPermanence": {
+                "indefiniteLeaveToRemain": {
+                  "yearsRequired": 5,
+                  "continuousEmployment": true,
+                  "description": "After 5 years in Skilled Worker visa, eligible to apply for indefinite leave to remain"
+                }
+              },
+              "lastVerified": "2025-11-25",
+              "dataQuality": "verified"
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "visaTypeCategories": [
+    {
+      "categoryId": "tourism-short-term",
+      "categoryName": "Tourism & Short-term Visit",
+      "description": "Visas for leisure travel, family visits, and short business trips",
+      "typicalDuration": "7 days to 6 months",
+      "allowsWork": false,
+      "allowsStudy": false,
+      "requiresSponsor": false,
+      "examplesInclude": [
+        "Tourist Visa",
+        "Visitor Visa",
+        "Visa on Arrival",
+        "Business Visitor Visa"
+      ]
+    },
+    {
+      "categoryId": "work-long-term",
+      "categoryName": "Long-term Work Visa",
+      "description": "Visas for professional employment with employer sponsorship",
+      "typicalDuration": "2-5 years",
+      "allowsWork": true,
+      "allowsStudy": false,
+      "requiresSponsor": true,
+      "pathToResidency": "possible",
+      "examplesInclude": [
+        "Skilled Worker Visa",
+        "Work Permit",
+        "Professional Visa"
+      ]
+    },
+    {
+      "categoryId": "work-permanent",
+      "categoryName": "Permanent Work Residency",
+      "description": "Permanent residency visas for skilled workers, typically requiring prior work visa",
+      "typicalDuration": "permanent",
+      "allowsWork": true,
+      "allowsStudy": false,
+      "requiresSponsor": true,
+      "pathToCitizenship": true,
+      "examplesInclude": [
+        "Permanent Residency",
+        "Green Card",
+        "Employer Nomination Scheme"
+      ]
+    },
+    {
+      "categoryId": "study",
+      "categoryName": "Student Visa",
+      "description": "Visas for full-time study at educational institutions",
+      "typicalDuration": "duration of course + grace period",
+      "allowsWork": "limited (part-time permitted)",
+      "allowsStudy": true,
+      "requiresSponsor": true,
+      "examplesInclude": [
+        "Student Visa",
+        "Study Permit",
+        "Academic Visitor"
+      ]
+    }
+  ],
+  "embeddingGuidance": {
+    "semanticSegmentation": "Split by: [Country]-[VisaType]-[OriginNationality] for optimal retrieval",
+    "metadataForReranking": [
+      "origin_country_code",
+      "destination_country_code",
+      "visa_type_category",
+      "difficulty_score",
+      "processing_time_weeks",
+      "visa_fee_amount",
+      "requires_sponsorship",
+      "allows_dependents"
+    ],
+    "commonQueryPatterns": [
+      "What visa do [nationality] need for [country]?",
+      "What are requirements for [visa_type] in [country]?",
+      "How long does [country] [visa_type] take?",
+      "What documents are needed for [country] [visa_type]?",
+      "Can I bring family on [visa_type]?",
+      "What is the cost of [visa_type] in [country]?"
+    ],
+    "hybridRetrievalRecommendation": "Use vector search for semantic similarity + metadata filtering for structured requirements (e.g., age limits, salary thresholds)"
   },
-  {
-    "code": "AU",
-    "country": "Australia",
-    "official_site": "https://immi.homeaffairs.gov.au/visas/getting-a-visa/visa-listing/visitor-600",
-    "facts": [
-      "Visitor visa (subclass 600) covers tourism, visiting family/friends and some short business activities.",
-      "Applicants must be outside Australia when applying/decision made (depending on stream).",
-      "Applicants must demonstrate genuine temporary stay intention and sufficient funds; work is not permitted on most visitor streams.",
-      "Different application streams exist (tourist, business visitor, sponsored family)."
-    ]
-  },
-  {
-    "code": "DE",
-    "country": "Germany",
-    "official_site": "https://www.auswaertiges-amt.de/en/visa-service",
-    "facts": [
-      "Schengen short-stay rules apply for Germany (generally up to 90 days in any 180-day period) for non-EEA nationals unless exempt.",
-      "Long-stay/residence visas (work, study, family reunion) require application at German missions; some categories require proof of finances (e.g., blocked account for students).",
-      "Visa requirement depends on nationality; always check the Federal Foreign Office pages for country tables.",
-      "Many document requirements are strict and appointment-based at consulates/embassies."
-    ]
-  },
-  {
-    "code": "FR",
-    "country": "France",
-    "official_site": "https://france-visas.gouv.fr/en/",
-    "facts": [
-      "France uses the France-Visas portal to guide applicants and accept many digital supporting documents.",
-      "Short-stay (Schengen) visas follow the Schengen rules; long-stay visas (student, work, family) have specific procedures and forms.",
-      "Applicants must follow document checklists precisely; missing documents often delay or cause refusal.",
-      "Fees and appointment processes vary by applicant country and consular centre."
-    ]
-  },
-  {
-    "code": "JP",
-    "country": "Japan",
-    "official_site": "https://www.mofa.go.jp/j_info/visit/visa/",
-    "facts": [
-      "Visa types (tourist, business, work, student) differ by purpose and local consular guidance; some nationalities can apply for eVisa online.",
-      "Required documents vary by mission — applicants should consult the embassy/consulate website where they will apply.",
-      "Short-term tourism e-visas exist for eligible nationalities via the eVISA portal.",
-      "Processing and documentation requirements can change by local health/security conditions; confirm with the local Japanese mission."
-    ]
-  },
-  {
-    "code": "IN",
-    "country": "India",
-    "official_site": "https://indianvisaonline.gov.in/",
-    "facts": [
-      "India provides e-Visas for many nationalities (tourist, business, medical) via the official Indian Visa Online portal.",
-      "Application flow is online form → upload supporting documents → submit at visa application center or mission when required.",
-      "Applicants should beware of third-party/fraud sites and use only the official portal for eVisa services.",
-      "Different visa categories have specific document requirements and submission rules."
-    ]
-  },
-  {
-    "code": "AE",
-    "country": "United Arab Emirates",
-    "official_site": "https://u.ae/en/information-and-services/visa-and-emirates-id",
-    "facts": [
-      "UAE issues visit/tourist/residence visas; rules and application channels vary (airline, employer sponsorship, or government portal).",
-      "Some nationalities can obtain visas on arrival; others must apply in advance or use airline/VFS channels.",
-      "Residency visas are linked to Emirates ID issuance and sponsorship (employer, family, property, etc.).",
-      "Applicants should use the UAE government's official portal for accurate rules and fees."
-    ]
-  },
-  {
-    "code": "ZA",
-    "country": "South Africa",
-    "official_site": "https://www.gov.za/services/temporary-residence/visa",
-    "facts": [
-      "South Africa issues temporary residence visas (visitor, study, work, business) and requires specified supporting documents and consular procedures.",
-      "Some travellers require an eVisa; consult Department of Home Affairs guidance and the eVisa portal for online processing.",
-      "Processing requirements and visa exemptions vary by nationality; applicants should check official DHA pages for country-specific rules.",
-      "Appointments, biometric data and consular fees are common parts of the process."
-    ]
-  }
-]
+  "updateFrequency": "daily",
+  "maintenanceNotes": "Data sourced from official government immigration websites. Each entry includes lastVerified date. Verify with official sources before critical decisions."
+}

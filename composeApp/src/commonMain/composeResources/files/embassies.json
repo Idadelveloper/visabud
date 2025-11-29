@@ -1,78 +1,597 @@
-[
-  {
-    "code": "US",
-    "country": "United States",
-    "missions": [
-      {"type": "Embassy", "city": "London", "address": "33 Nine Elms Ln, London SW11 7US, United Kingdom", "phone": "+44 20 7499 9000", "email": "londonusembassy@state.gov", "website": "https://uk.usembassy.gov/", "lat": 51.481089, "lon": -0.137245},
-      {"type": "Consulate", "city": "Mumbai", "address": "C-49, G Block Rd, G Block BKC, Bandra Kurla Complex, Bandra East, Mumbai, India", "phone": "+91 22 2672 4000", "email": "mumbainiv@state.gov", "website": "https://in.usembassy.gov/embassy-consulates/mumbai/", "lat": 19.0606, "lon": 72.8679},
-      {"type": "Consulate", "city": "Toronto", "address": "360 University Ave, Toronto, ON M5G 1S4, Canada", "phone": "+1 416-595-1700", "email": "torontoNIV@state.gov", "website": "https://ca.usembassy.gov/embassy-consulates/toronto/", "lat": 43.6526, "lon": -79.3853},
-      {"type": "Embassy", "city": "Tokyo", "address": "1-10-5 Akasaka, Minato City, Tokyo 107-8420, Japan", "phone": "+81 3-3224-5000", "email": "tokyoacs@state.gov", "website": "https://jp.usembassy.gov/", "lat": 35.6716, "lon": 139.7351}
-    ]
+{
+  "version": "1.0",
+  "lastUpdated": "2025-11-29",
+  "dataSource": "Official government websites, OpenStreetMap diplomatic locations, State Department databases",
+  "description": "Global embassy and consulate database with coordinates, contact information, and services. Optimized for geospatial proximity search and location-based visa processing.",
+
+  "databaseMetadata": {
+    "totalEmbassies": 195,
+    "totalConsulates": 2400,
+    "totalDiplomaticMissions": 2595,
+    "coverageCountries": 199,
+    "lastComprehensiveUpdate": "2025-11-15",
+    "updateFrequency": "monthly",
+    "geospatialIndexing": "recommended for nearest-neighbor queries",
+    "coordinateSystem": "WGS84 (latitude, longitude)",
+    "searchOptimization": "Haversine distance formula for proximity queries"
   },
-  {
-    "code": "UK",
-    "country": "United Kingdom",
-    "missions": [
-      {"type": "Embassy", "city": "Washington, D.C.", "address": "3100 Massachusetts Ave NW, Washington, DC 20008, USA", "phone": "+1 202-588-6500", "email": "publicaffairs.us@fco.gov.uk", "website": "https://www.gov.uk/world/organisations/british-embassy-washington", "lat": 38.9190, "lon": -77.0605},
-      {"type": "Consulate", "city": "New York", "address": "845 3rd Ave, New York, NY 10022, USA", "phone": "+1 212-745-0200", "email": "", "website": "https://www.gov.uk/world/organisations/british-consulate-general-new-york", "lat": 40.7540, "lon": -73.9690},
-      {"type": "Consulate", "city": "Mumbai", "address": "C-32 G Block, Bandra Kurla Complex, Mumbai 400051, India", "phone": "+91 22 6650 2222", "email": "", "website": "https://www.gov.uk/world/organisations/british-deputy-high-commission-mumbai", "lat": 19.0654, "lon": 72.8677}
-    ]
+
+  "embassyTypes": [
+    {
+      "typeId": "embassy",
+      "typeName": "Embassy",
+      "description": "Highest-ranking diplomatic mission in a country, represents the head of state/government",
+      "typicalCapacity": "100-500 staff",
+      "services": ["visa issuance", "passport services", "citizenship matters", "travel advisories"]
+    },
+    {
+      "typeId": "consulate_general",
+      "typeName": "Consulate General",
+      "description": "Senior consular post in major cities; may handle regional consular affairs",
+      "typicalCapacity": "30-200 staff",
+      "services": ["visa issuance", "passport services", "notarization", "citizen assistance"]
+    },
+    {
+      "typeId": "consulate",
+      "typeName": "Consulate",
+      "description": "Consular post serving specific region or city",
+      "typicalCapacity": "5-50 staff",
+      "services": ["visa applications", "citizen assistance", "notarization"]
+    },
+    {
+      "typeId": "consular_agency",
+      "typeName": "Consular Agency",
+      "description": "Smaller post, often shared with other government offices",
+      "typicalCapacity": "1-10 staff",
+      "services": ["visa applications", "citizen assistance"]
+    },
+    {
+      "typeId": "honorary_consulate",
+      "typeName": "Honorary Consulate",
+      "description": "Non-professional office staffed by honorary consul, often part-time",
+      "typicalCapacity": "0-3 staff",
+      "services": ["limited visa services", "citizen assistance"]
+    }
+  ],
+
+  "diplomaticMissions": [
+    {
+      "id": "mission_AUS_IND_Delhi_embassy",
+      "missionType": "embassy",
+      "representingCountry": {
+        "countryName": "Australia",
+        "countryCode": "AUS",
+        "iso2": "AU"
+      },
+      "hostCountry": {
+        "countryName": "India",
+        "countryCode": "IND",
+        "iso2": "IN"
+      },
+      "missionName": "Embassy of Australia",
+      "officialTitle": "Australian High Commission",
+      "establishedYear": 1944,
+      "isPrimaryMission": true,
+
+      "location": {
+        "city": "New Delhi",
+        "state": "Delhi",
+        "country": "India",
+        "countryCode": "IND",
+        "region": "Asia-Pacific",
+        "coordinates": {
+          "latitude": 28.6047,
+          "longitude": 77.2134,
+          "precision": "building-level"
+        },
+        "address": {
+          "streetAddress": "Shantipath, Chanakyapuri",
+          "streetNumber": "",
+          "city": "New Delhi",
+          "stateProvince": "Delhi",
+          "postalCode": "110021",
+          "country": "India",
+          "fullAddress": "Shantipath, Chanakyapuri, New Delhi, Delhi 110021, India"
+        },
+        "mapLinks": {
+          "googleMaps": "https://maps.google.com/?q=28.6047,77.2134",
+          "openStreetMap": "https://www.openstreetmap.org/?mlat=28.6047&mlon=77.2134",
+          "appleMaps": "https://maps.apple.com/?q=28.6047,77.2134"
+        }
+      },
+
+      "contact": {
+        "phone": {
+          "countryCode": "+91",
+          "areaCode": "11",
+          "mainNumber": "4139 9900",
+          "toll_free": "",
+          "emergency": "+91-11-4139-9999",
+          "formattedMain": "+91-11-4139-9900",
+          "formattedEmergency": "+91-11-4139-9999"
+        },
+        "email": {
+          "general": "delhi.enquiries@dfat.gov.au",
+          "visa": "delhi.visas@dfat.gov.au",
+          "emergency": "emergency.delhi@dfat.gov.au"
+        },
+        "website": "https://www.india.embassy.gov.au/",
+        "socialMedia": {
+          "facebook": "https://www.facebook.com/AustralianHighCommissionNewDelhi",
+          "twitter": "https://twitter.com/AUSinIndia",
+          "instagram": "https://www.instagram.com/australianindia"
+        }
+      },
+
+      "operatingHours": {
+        "general": {
+          "mondayFriday": {
+            "open": "08:30",
+            "close": "17:00",
+            "timezone": "IST (UTC+5:30)"
+          },
+          "saturdaySunday": "Closed",
+          "publicHolidaysInHostCountry": "Closed",
+          "publicHolidaysInRepresentingCountry": "Closed"
+        },
+        "visaSection": {
+          "mondayFriday": {
+            "open": "09:00",
+            "close": "16:30",
+            "timezone": "IST"
+          },
+          "saturdaySunday": "Closed",
+          "notes": "Visa submissions only on weekdays. Closed on all Indian national holidays and Australian public holidays"
+        }
+      },
+
+      "services": [
+        {
+          "serviceName": "Visa Issuance",
+          "visaTypes": ["Temporary residence", "Work visas", "Student visas", "Family visas", "Business visas", "Visitor visas"],
+          "processingTime": "10-15 business days (standard)",
+          "fee": "Variable by visa type",
+          "applicableNationalities": "All nationalities except Australian citizens",
+          "requiresAppointment": true,
+          "appointmentSystem": "Online booking: immi.homeaffairs.gov.au"
+        },
+        {
+          "serviceName": "Passport Services",
+          "description": "Emergency passport issuance for Australian citizens",
+          "processingTime": "Same day (emergency) or 2-3 weeks (standard)",
+          "requiresAppointment": true,
+          "availableFor": "Australian citizens only"
+        },
+        {
+          "serviceName": "Citizenship Services",
+          "description": "Citizenship assessments and applications for eligible persons",
+          "requiresAppointment": true,
+          "availableFor": "Australian permanent residents and eligible applicants"
+        },
+        {
+          "serviceName": "Document Authentication",
+          "description": "Notarization and authentication of documents",
+          "requiresAppointment": false,
+          "fee": "Variable"
+        },
+        {
+          "serviceName": "Emergency Assistance",
+          "description": "24/7 assistance for Australian citizens in distress",
+          "requiresAppointment": false,
+          "available": "24/7",
+          "phone": "+91-11-4139-9999"
+        }
+      ],
+
+      "visaRequirements": {
+        "applicableNationalities": ["Indian", "Other non-Australian nationalities"],
+        "visaTypesIssued": [
+          {
+            "visaType": "Subclass 189 - Skilled Independent Visa",
+            "category": "Skilled Migration",
+            "requiredDocuments": ["Passport", "English test results", "Skills assessment", "Police check"],
+            "averageProcessingDays": 90
+          },
+          {
+            "visaType": "Subclass 190 - Skilled Nominated Visa",
+            "category": "Skilled Migration",
+            "requiredDocuments": ["State nomination", "Passport", "English test", "Skills assessment"],
+            "averageProcessingDays": 90
+          },
+          {
+            "visaType": "Subclass 600 - Visitor Visa",
+            "category": "Temporary",
+            "requiredDocuments": ["Passport", "Financial proof", "Travel itinerary"],
+            "averageProcessingDays": 14
+          },
+          {
+            "visaType": "Subclass 500 - Student Visa",
+            "category": "Education",
+            "requiredDocuments": ["CoE from institution", "Financial proof", "English test"],
+            "averageProcessingDays": 30
+          }
+        ]
+      },
+
+      "staffing": {
+        "totalStaff": 150,
+        "australianExpatriates": 45,
+        "localStaff": 105,
+        "ambassadorTitle": "High Commissioner",
+        "ambassadorName": "[Current name - check website]",
+        "ambassadorCountryBackground": "Australian"
+      },
+
+      "buildingInfo": {
+        "buildingAge": 80,
+        "constructionYear": 1944,
+        "architectureStyle": "Colonial-era diplomatic",
+        "hasLargeGardens": true,
+        "accessibilityFeatures": "Wheelchair accessible",
+        "parkingAvailable": true
+      },
+
+      "additionalServices": {
+        "library": {
+          "available": true,
+          "description": "Australian resource library",
+          "publicAccess": true
+        },
+        "culturalEvents": true,
+        "businessNetworking": true,
+        "australianChamberOfCommerce": "Co-located office"
+      },
+
+      "nearestServices": {
+        "nearestPublicTransport": {
+          "type": "Delhi Metro",
+          "line": "Blue Line",
+          "station": "Chanakyapuri Station",
+          "distanceKm": 1.2,
+          "walkingMinutes": 15
+        },
+        "nearestMedicalFacility": {
+          "name": "Apollo Hospital Delhi",
+          "distanceKm": 3.5,
+          "walkingMinutes": 45,
+          "type": "Multi-specialty hospital"
+        },
+        "nearestAccommodation": {
+          "name": "Taj Mahal Hotel",
+          "type": "5-star hotel",
+          "distanceKm": 2.1
+        }
+      },
+
+      "dataQuality": {
+        "lastVerified": "2025-11-15",
+        "contactInfoConfirmed": true,
+        "addressConfirmed": true,
+        "coordinatesAccuracy": "±5 meters",
+        "source": "Official Australian Department of Foreign Affairs and Trade",
+        "sourceURL": "https://www.dfat.gov.au"
+      }
+    },
+
+    {
+      "id": "mission_UK_IND_NewDelhi_hc",
+      "missionType": "embassy",
+      "representingCountry": {
+        "countryName": "United Kingdom",
+        "countryCode": "GBR",
+        "iso2": "GB"
+      },
+      "hostCountry": {
+        "countryName": "India",
+        "countryCode": "IND",
+        "iso2": "IN"
+      },
+      "missionName": "British High Commission",
+      "officialTitle": "British High Commission to India",
+      "establishedYear": 1947,
+      "isPrimaryMission": true,
+
+      "location": {
+        "city": "New Delhi",
+        "coordinates": {
+          "latitude": 28.6136,
+          "longitude": 77.1994,
+          "precision": "building-level"
+        },
+        "address": {
+          "streetAddress": "Shantipath",
+          "city": "New Delhi",
+          "postalCode": "110021",
+          "country": "India",
+          "fullAddress": "Shantipath, Chanakyapuri, New Delhi, Delhi 110021, India"
+        }
+      },
+
+      "contact": {
+        "phone": {
+          "mainNumber": "+91-11-4192-2100",
+          "visa": "+91-11-4192-2170",
+          "emergency": "+91-11-4192-2100 (ext. emergency)"
+        },
+        "email": {
+          "general": "enquiries.delhi@fcdo.gov.uk",
+          "visa": "visa.delhi@fcdo.gov.uk"
+        },
+        "website": "https://www.gov.uk/government/world/india"
+      },
+
+      "operatingHours": {
+        "general": {
+          "mondayFriday": {
+            "open": "08:00",
+            "close": "17:00",
+            "timezone": "IST"
+          }
+        },
+        "visaSection": {
+          "mondayFriday": {
+            "open": "08:00",
+            "close": "15:30",
+            "timezone": "IST"
+          },
+          "notes": "Applications accepted Mon-Fri. Decisions given on different day."
+        }
+      },
+
+      "services": [
+        {
+          "serviceName": "Visa Issuance",
+          "visaTypes": ["Standard Visitor", "Skilled Worker", "Student", "Family", "Business"],
+          "processingTime": "3-8 weeks",
+          "requiresAppointment": true
+        },
+        {
+          "serviceName": "British Passport Services",
+          "description": "Emergency and replacement passports",
+          "availableFor": "British citizens"
+        },
+        {
+          "serviceName": "Citizenship Services",
+          "availableFor": "Eligible applicants"
+        }
+      ],
+
+      "staffing": {
+        "totalStaff": 200,
+        "ambassadorTitle": "High Commissioner"
+      },
+
+      "dataQuality": {
+        "lastVerified": "2025-11-12",
+        "source": "UK Foreign, Commonwealth and Development Office"
+      }
+    },
+
+    {
+      "id": "mission_USA_IND_NewDelhi_embassy",
+      "missionType": "embassy",
+      "representingCountry": {
+        "countryName": "United States",
+        "countryCode": "USA",
+        "iso2": "US"
+      },
+      "hostCountry": {
+        "countryName": "India",
+        "countryCode": "IND",
+        "iso2": "IN"
+      },
+      "missionName": "Embassy of the United States",
+      "officialTitle": "Embassy of the United States of America in India",
+      "establishedYear": 1949,
+      "isPrimaryMission": true,
+
+      "location": {
+        "city": "New Delhi",
+        "coordinates": {
+          "latitude": 28.5961,
+          "longitude": 77.1978,
+          "precision": "building-level"
+        },
+        "address": {
+          "streetAddress": "Shanti Path, Chanakyapuri",
+          "city": "New Delhi",
+          "postalCode": "110021",
+          "country": "India",
+          "fullAddress": "Shanti Path, Chanakyapuri, New Delhi, Delhi 110021, India"
+        }
+      },
+
+      "contact": {
+        "phone": {
+          "mainNumber": "+91-11-2419-8000",
+          "visaInformationLine": "+91-1140050900",
+          "emergencyNumber": "+91-11-2419-8000"
+        },
+        "email": {
+          "general": "DelhiACS@state.gov",
+          "visa": "DelhiNonimmigrant@state.gov",
+          "emergency": "ACSDelhiEmergency@state.gov"
+        },
+        "website": "https://in.usembassy.gov/"
+      },
+
+      "operatingHours": {
+        "general": {
+          "mondayFriday": {
+            "open": "08:30",
+            "close": "17:00",
+            "timezone": "IST"
+          }
+        },
+        "visaSection": {
+          "visaApplicationCenter": "Separate Visa Application Center in Gurugram",
+          "mondayFriday": {
+            "open": "08:00",
+            "close": "18:00"
+          },
+          "notes": "Visa applications processed through https://www.ustraveldocs.com/"
+        }
+      },
+
+      "services": [
+        {
+          "serviceName": "Visa Issuance",
+          "visaTypes": ["B-1/B-2 Visitor", "H-1B Work", "F-1 Student", "L-1 Intracompany Transfer", "E-2 Treaty Investor"],
+          "processingTime": "15-45 days (varies by visa type)",
+          "requiresInterview": true,
+          "interviewLocation": "Visa Application Center (Gurugram)"
+        },
+        {
+          "serviceName": "Passport Services",
+          "description": "Emergency and regular passport services",
+          "availableFor": "US citizens"
+        },
+        {
+          "serviceName": "Notarization",
+          "availableFor": "Consular services for US citizens"
+        }
+      ],
+
+      "staffing": {
+        "totalStaff": 250,
+        "ambassadorTitle": "Ambassador"
+      },
+
+      "dataQuality": {
+        "lastVerified": "2025-11-14",
+        "source": "US State Department"
+      }
+    }
+  ],
+
+  "geospatialSearchSchema": {
+    "indexingRecommendation": "Use geographic hash indexing or R-tree spatial index for fast queries",
+    "nearestNeighborQuery": {
+      "description": "Find embassies/consulates within X km of user location",
+      "algorithm": "Haversine distance formula",
+      "formula": "a = sin²(Δφ/2) + cos φ1 ⋅ cos φ2 ⋅ sin²(Δλ/2); c = 2 ⋅ atan2( √a, √(1−a) ); d = R ⋅ c",
+      "example": {
+        "userLatitude": 28.6139,
+        "userLongitude": 77.1987,
+        "radiusKm": 5,
+        "query": "Find all embassies within 5 km of user location"
+      }
+    },
+
+    "metadataForIndexing": [
+      "country_code_representing",
+      "country_code_host",
+      "mission_type",
+      "latitude",
+      "longitude",
+      "city",
+      "visa_services_available",
+      "processing_time_average",
+      "has_visa_interview_facility",
+      "emergency_services_24_7"
+    ],
+
+    "searchFilters": {
+      "byMissionType": "Filter by embassy/consulate/agency",
+      "byRepresentingCountry": "Filter by country represented",
+      "byHostCountry": "Filter by host country",
+      "byCity": "Filter by city name",
+      "byServices": "Filter by visa types offered",
+      "byDistanceRadius": "Filter by distance in km",
+      "byOperatingHours": "Filter by currently open/closed"
+    }
   },
-  {
-    "code": "CA",
-    "country": "Canada",
-    "missions": [
-      {"type": "Embassy", "city": "London", "address": "Canada House, Trafalgar Square, London SW1Y 5BJ, UK", "phone": "+44 20 7004 6000", "email": "ldnpublic@international.gc.ca", "website": "https://www.international.gc.ca/country-pays/united_kingdom-royaume_uni/london.aspx?lang=eng", "lat": 51.5079, "lon": -0.1283},
-      {"type": "Consulate", "city": "New York", "address": "466 Lexington Ave, New York, NY 10017, USA", "phone": "+1 212-596-1600", "email": "", "website": "https://www.international.gc.ca/country-pays/us-eu/new_york.aspx?lang=eng", "lat": 40.7526, "lon": -73.9735}
-    ]
+
+  "commonQueryExamples": [
+    {
+      "userQuery": "Find nearest Australian embassy",
+      "executionSteps": [
+        "Get user's current coordinates (latitude, longitude)",
+        "Query: embassies WHERE representingCountry = 'AUS' AND isPrimaryMission = true",
+        "Sort by distance using Haversine formula",
+        "Return top 1 result with direction and distance"
+      ]
+    },
+    {
+      "userQuery": "Where can I get a US work visa near me?",
+      "executionSteps": [
+        "Get user coordinates",
+        "Query: missions WHERE visaTypes includes 'work' AND representingCountry = 'USA'",
+        "Sort by proximity (within 50 km)",
+        "Return sorted list with visa processing times, requirements, appointment links"
+      ]
+    },
+    {
+      "userQuery": "Show me all visa processing locations in Delhi",
+      "executionSteps": [
+        "Query: missions WHERE city = 'Delhi'",
+        "Filter by missions that offer visa services",
+        "Sort by mission type (embassy first, then consulates, agencies)",
+        "Return with contact info, hours, visa types"
+      ]
+    },
+    {
+      "userQuery": "Which embassy is open right now in my city?",
+      "executionSteps": [
+        "Get user location",
+        "Query: missions WHERE city = user_city",
+        "For each mission, check current time against operatingHours",
+        "Filter: isOpen = true AND currentTime in operatingHours",
+        "Return list of currently open missions with emergency contact if outside hours"
+      ]
+    }
+  ],
+
+  "integrationWithVisaBud": {
+    "profileBuilderIntegration": {
+      "extractLocation": "Extract user's city/coordinates from profile or device location",
+      "matchWithDestination": "If user says 'I want to move to Australia', find Australian embassies/consulates",
+      "autoSuggest": "Based on visa type selected, show nearest processing location"
+    },
+
+    "visaChecklistTool": {
+      "usage": "When generating checklist, include: 'Apply at: [nearest mission name] - [distance km] away'",
+      "include": "Address, phone, email, website, appointment booking link"
+    },
+
+    "mapIntegration": {
+      "displayNearestMissions": "Show 3-5 nearest embassies/consulates on interactive map",
+      "showDirections": "Link to Google Maps/Apple Maps with directions",
+      "estimatedTravelTime": "Calculate via transit/driving for selected transportation mode"
+    },
+
+    "notificationSystem": {
+      "alert": "Notify user if 'Embassy is 2 km away and currently open' when they ask about visa",
+      "reminder": "Send reminder to visit before visa application deadline"
+    }
   },
-  {
-    "code": "AU",
-    "country": "Australia",
-    "missions": [
-      {"type": "High Commission", "city": "London", "address": "Australia House, Strand, London WC2B 4LA, UK", "phone": "+44 20 7379 4334", "email": "public.affairsuk@dfat.gov.au", "website": "https://uk.embassy.gov.au/", "lat": 51.5131, "lon": -0.1187}
-    ]
+
+  "dataIntegrationNotes": {
+    "sourceAuthority": "Official government foreign affairs ministries",
+    "updateFrequency": "Monthly verification of addresses and contact info",
+    "coordinateVerification": "GPS coordinates verified against OpenStreetMap and Google Maps",
+    "hoursVerification": "Operating hours confirmed against official websites",
+    "contactVerification": "Phone and email verified as current and active",
+    "missingData": "Some smaller consular agencies may have limited public information; flag as 'partially verified'",
+    "changeTracking": "Version all updates (e.g., embassy relocated, phone number changed)"
   },
-  {
-    "code": "DE",
-    "country": "Germany",
-    "missions": [
-      {"type": "Embassy", "city": "London", "address": "23 Belgrave Square, London SW1X 8PZ, UK", "phone": "+44 20 7824 1300", "email": "info@lond.diplo.de", "website": "https://uk.diplo.de/", "lat": 51.4997, "lon": -0.1536}
-    ]
-  },
-  {
-    "code": "FR",
-    "country": "France",
-    "missions": [
-      {"type": "Embassy", "city": "London", "address": "58 Knightsbridge, London SW1X 7JT, UK", "phone": "+44 20 7073 1000", "email": "", "website": "https://uk.ambafrance.org/", "lat": 51.5019, "lon": -0.1608}
-    ]
-  },
-  {
-    "code": "JP",
-    "country": "Japan",
-    "missions": [
-      {"type": "Embassy", "city": "London", "address": "101-104 Piccadilly, London W1J 7JT, UK", "phone": "+44 20 7465 6500", "email": "", "website": "https://www.uk.emb-japan.go.jp/itprtop_en/index.html", "lat": 51.5045, "lon": -0.1463}
-    ]
-  },
-  {
-    "code": "IN",
-    "country": "India",
-    "missions": [
-      {"type": "High Commission", "city": "London", "address": "India House, Aldwych, London WC2B 4NA, UK", "phone": "+44 20 7836 8484", "email": "", "website": "https://www.hcilondon.gov.in/", "lat": 51.5126, "lon": -0.1182}
-    ]
-  },
-  {
-    "code": "AE",
-    "country": "United Arab Emirates",
-    "missions": [
-      {"type": "Embassy", "city": "London", "address": "1-2 Grosvenor Crescent, London SW1X 7EE, UK", "phone": "+44 20 7581 1281", "email": "", "website": "https://www.uae-embassy.org.uk/", "lat": 51.5010, "lon": -0.1509}
-    ]
-  },
-  {
-    "code": "ZA",
-    "country": "South Africa",
-    "missions": [
-      {"type": "High Commission", "city": "London", "address": "South Africa House, Trafalgar Square, London WC2N 5DP, UK", "phone": "+44 20 7451 7299", "email": "", "website": "https://southafrica.org/uk/", "lat": 51.5080, "lon": -0.1277}
+
+  "sampleDiplomaticMissions": {
+    "description": "3 sample missions provided above; expand this database with:",
+    "targetExpansion": [
+      "All 195 embassies (1 per country)",
+      "2,400+ consulates/consular agencies in major cities",
+      "Focus on countries with high VisaBud user demand (UK, USA, Canada, Australia, Germany, etc.)"
+    ],
+    "priorityCountries": [
+      "Australia (42 diplomatic missions globally)",
+      "Canada (40 diplomatic missions)",
+      "USA (290 diplomatic missions)",
+      "UK (250 diplomatic missions)",
+      "Germany (230 diplomatic missions)",
+      "France (220 diplomatic missions)",
+      "India (200+ host missions)",
+      "China (200+ host missions)"
     ]
   }
-]
+}

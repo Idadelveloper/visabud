@@ -50,7 +50,13 @@ object CostEstimator {
         val travelers: Int = 1,
         val currency: String = "USD",
         val includeLiving: Boolean = true,
-        val includeTravel: Boolean = true
+        val includeTravel: Boolean = true,
+        // New (fees DB integration)
+        val includeDependents: Boolean = true,
+        val includeAncillary: Boolean = true,
+        val expressProcessing: Boolean = false,
+        val spouseCount: Int = 0,
+        val childCount: Int = 0
     )
 
     /**
@@ -173,6 +179,83 @@ object CostEstimator {
     }
 
     fun toJson(estimate: CostEstimate): String = json.encodeToString(estimate)
+
+    // ------------------ New: Fees DB powered estimate ------------------
+    /**
+     * Attempt to compute costs using the structured Visa Fees DB when a concrete visaTypeId is known.
+     * Falls back to heuristic if data is missing.
+     */
+    suspend fun estimateUsingFeesDb(
+        profile: UserProfile?,
+        destinationCodeOrName: String?,
+        visaTypeId: String?,
+        options: Options = Options()
+    ): CostEstimate? {
+        if (visaTypeId.isNullOrBlank()) return null
+        val entry = VisaFactsRag.findCountryByNameOrCode(destinationCodeOrName)
+        val destCode = entry?.code ?: destinationCodeOrName?.trim()?.uppercase()
+        val destName = entry?.country ?: destinationCodeOrName
+        if (destCode.isNullOrBlank()) return null
+        val fee = try { VisaFeesDb.loadVisaFee(destCode, visaTypeId) } catch (_: Throwable) { null }
+        if (fee == null) return null
+
+        val items = mutableListOf<LineItem>()
+        // Base fee in USD
+        val baseUsd = VisaFeesDb.convertToUsd(fee.baseFee.amount, fee.baseFee.currency) ?: fee.baseFee.amount
+        items += LineItem(label = fee.visaTypeName ?: "Application fee", amount = baseUsd, currency = "USD", notes = "(${fee.baseFee.amount} ${fee.baseFee.currency})", confidence = 90)
+
+        // Dependents
+        if (options.includeDependents && fee.dependentFees.isNotEmpty()) {
+            val spouse = options.spouseCount.coerceAtLeast(0)
+            val child = options.childCount.coerceAtLeast(0)
+            fee.dependentFees["spouse"]?.let { m ->
+                val usd = VisaFeesDb.convertToUsd(m.amount, m.currency) ?: m.amount
+                val total = usd * spouse
+                if (spouse > 0) items += LineItem(label = "Spouse/Partner (x$spouse)", amount = total, notes = "${m.amount} ${m.currency} each", confidence = 85)
+            }
+            fee.dependentFees["child"]?.let { m ->
+                val usd = VisaFeesDb.convertToUsd(m.amount, m.currency) ?: m.amount
+                val total = usd * child
+                if (child > 0) items += LineItem(label = "Child (x$child)", amount = total, notes = "${m.amount} ${m.currency} each", confidence = 85)
+            }
+        }
+
+        // Ancillary mandatory
+        if (options.includeAncillary) {
+            for (a in fee.ancillaryFees) {
+                val usd = VisaFeesDb.convertToUsd(a.amount, a.currency) ?: a.amount
+                items += LineItem(label = a.serviceName, amount = usd, notes = if (a.mandatory) "mandatory" else null, confidence = 80)
+            }
+        }
+        // Optional: add English test if present and likely required
+        fee.optionalAncillaryFees.firstOrNull { it.serviceId.contains("english", true) || it.serviceName.contains("English", true) }?.let { a ->
+            val usd = VisaFeesDb.convertToUsd(a.amount, a.currency) ?: a.amount
+            items += LineItem(label = a.serviceName, amount = usd, notes = "if required", confidence = 60)
+        }
+
+        // Travel/living remain heuristic (optional)
+        if (options.includeTravel) {
+            val flights = estimateFlights(profile?.countryOfResidence, destCode)
+            if (flights > 0) items += LineItem("Flights", flights * (options.travelers.coerceAtLeast(1)), notes = passengersNote(options.travelers), confidence = 40)
+        }
+
+        val totalUsd = round2(items.sumOf { it.amount })
+        val assumptions = buildAssumptions(null, null, options.travelers)
+        val citations = buildList {
+            entry?.officialSite?.let { add(it) }
+        }
+        return CostEstimate(
+            destination = destName,
+            goal = null,
+            durationMonths = null,
+            travelers = options.travelers.coerceAtLeast(1),
+            currency = "USD",
+            items = items,
+            total = totalUsd,
+            assumptions = assumptions + listOf("Grounded by local visa fees database where available"),
+            citations = citations
+        )
+    }
 
     // ------------------ Heuristics ------------------
 

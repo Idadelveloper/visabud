@@ -32,6 +32,7 @@ import online.visabud.app.visabud_multiplatform.ui.DocumentReviewScreen
 import online.visabud.app.visabud_multiplatform.ui.WelcomeScreen
 import online.visabud.app.visabud_multiplatform.ui.EmbassyLocatorScreen
 import online.visabud.app.visabud_multiplatform.ui.CostCalculatorScreen
+import online.visabud.app.visabud_multiplatform.ui.SettingsScreen
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 
@@ -77,7 +78,7 @@ private fun MainScreen(initialScreen: MainScreen, onNavigate: (MainScreen) -> Un
                 MainScreen.Tools -> TopAppBar(title = { Text("Tools") })
                 MainScreen.EmbassyLocator -> TopAppBar(title = { Text("Embassy Locator") })
                 MainScreen.CostCalculator -> TopAppBar(title = { Text("Cost Calculator") })
-                MainScreen.Profile -> TopAppBar(title = { Text("Profile") })
+                MainScreen.Settings -> TopAppBar(title = { Text("Settings") })
                 MainScreen.DocumentReview -> TopAppBar(title = { Text("Document Review") })
                 MainScreen.Chat -> TopAppBar(
                     title = { Text("VisaBud Chat") }, 
@@ -102,7 +103,7 @@ private fun MainScreen(initialScreen: MainScreen, onNavigate: (MainScreen) -> Un
         bottomBar = {
             if (currentScreen != MainScreen.Chat) {
                 BottomAppBar {
-                    val items = listOf(MainScreen.Home, MainScreen.Tools, MainScreen.Profile)
+                    val items = listOf(MainScreen.Home, MainScreen.Tools, MainScreen.Settings)
                     val icons =
                         listOf(Icons.Outlined.Home, Icons.Outlined.Construction, Icons.Outlined.Person)
 
@@ -128,8 +129,7 @@ private fun MainScreen(initialScreen: MainScreen, onNavigate: (MainScreen) -> Un
                 onOpenEmbassyLocator = { currentScreen = MainScreen.EmbassyLocator },
                 onOpenCostCalculator = { currentScreen = MainScreen.CostCalculator }
             )
-            MainScreen.Profile -> { /* TODO: Profile Screen */
-            }
+            MainScreen.Settings -> SettingsScreen(paddingValues)
             MainScreen.Chat -> ChatScreen(paddingValues)
             MainScreen.DocumentReview -> DocumentReviewScreen(paddingValues)
             MainScreen.EmbassyLocator -> EmbassyLocatorScreen(paddingValues)
@@ -146,7 +146,7 @@ private sealed class Screen {
 private enum class MainScreen {
     Home,
     Tools,
-    Profile,
+    Settings,
     Chat,
     DocumentReview,
     EmbassyLocator,

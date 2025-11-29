@@ -64,6 +64,16 @@ fun DocumentReviewScreen(paddingValues: PaddingValues) {
                             encryptedPath = imagePath // placeholder: path stored as-is for demo
                         )
                         DataModule.documents.add(doc)
+                        // Update user profile: add saved doc ID and fill missing fields if available
+                        try {
+                            val existing = DataModule.profiles.getProfile() ?: online.visabud.app.visabud_multiplatform.data.UserProfile()
+                            val updated = existing.copy(
+                                savedDocs = (existing.savedDocs + doc.id).distinct(),
+                                name = existing.name ?: fields["name"],
+                                dob = existing.dob ?: fields["dob"]
+                            )
+                            DataModule.profiles.upsertProfile(updated)
+                        } catch (_: Throwable) {}
                         status = "Fields extracted."
                     } catch (e: Throwable) {
                         status = "Extraction failed: ${e.message}"

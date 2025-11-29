@@ -17,6 +17,12 @@ data class UserProfile(
     val countryOfResidence: String? = null,
     val nationality: String? = null, // added per requirement
     val workStatus: String? = null, // e.g., "employed", "student"
+    val currentVisa: String? = null,
+    val education: String? = null,
+    val workYears: Int? = null,
+    val languages: String? = null, // comma-separated for MVP
+    val finances: String? = null, // low|med|high
+    val savedDocs: List<String> = emptyList(),
     val lastSeen: Long = 0L
 )
 

@@ -57,6 +57,23 @@ fun CostCalculatorScreen(paddingValues: PaddingValues) {
     LaunchedEffect(Unit) {
         val list = VisaFeesRepo.getAll()
         countries = list.map { it.country }.sorted()
+        // Suggest using profile country if exists and none selected yet
+        val profile = online.visabud.app.visabud_multiplatform.data.DataModule.profiles.getProfile()
+        val profCountry = profile?.countryOfResidence
+        if (selectedCountry == null && !profCountry.isNullOrBlank()) {
+            val confirm = snackbar.showSnackbar(
+                message = "Use your profile country ($profCountry)?",
+                actionLabel = "Use",
+                withDismissAction = true
+            )
+            if (confirm == SnackbarResult.ActionPerformed) {
+                selectedCountry = profCountry
+                // Load visa types for this selection
+                val entry = VisaFeesRepo.getByCodeOrName(profCountry)
+                visaTypes = entry?.visaTypes?.keys?.toList()?.sorted() ?: emptyList()
+                selectedVisaType = visaTypes.firstOrNull()
+            }
+        }
     }
 
     fun recalc() {

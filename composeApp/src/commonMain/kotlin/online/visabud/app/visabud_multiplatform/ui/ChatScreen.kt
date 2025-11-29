@@ -188,6 +188,16 @@ fun ChatScreen(paddingValues: PaddingValues) {
                                     encryptedPath = uploadPath
                                 )
                                 DataModule.documents.add(doc)
+                                // Update profile with saved doc ID
+                                try {
+                                    val existing = DataModule.profiles.getProfile() ?: online.visabud.app.visabud_multiplatform.data.UserProfile()
+                                    val updated = existing.copy(
+                                        savedDocs = (existing.savedDocs + doc.id).distinct(),
+                                        name = existing.name ?: fields["name"],
+                                        dob = existing.dob ?: fields["dob"]
+                                    )
+                                    DataModule.profiles.upsertProfile(updated)
+                                } catch (_: Throwable) {}
                                 // Add a user message informing the agent
                                 val userNote = buildString {
                                     append("I uploaded a document for ")

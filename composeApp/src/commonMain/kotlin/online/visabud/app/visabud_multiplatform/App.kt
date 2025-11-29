@@ -24,6 +24,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import kotlinx.parcelize.Parcelize
 import online.visabud.app.visabud_multiplatform.theme.VisabudTheme
+import online.visabud.app.visabud_multiplatform.ui.ChatScreen
 import online.visabud.app.visabud_multiplatform.ui.HomeHeader
 import online.visabud.app.visabud_multiplatform.ui.HomeScreen
 import online.visabud.app.visabud_multiplatform.ui.ToolsScreen
@@ -118,7 +119,7 @@ private fun MainScreen(initialScreen: MainScreen, onNavigate: (MainScreen) -> Un
             MainScreen.Tools -> ToolsScreen(paddingValues)
             MainScreen.Profile -> { /* TODO: Profile Screen */
             }
-            MainScreen.Chat -> online.visabud.app.visabud_multiplatform.ui.ChatScreen(paddingValues)
+            MainScreen.Chat -> ChatScreen(paddingValues)
         }
     }
 }

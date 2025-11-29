@@ -42,11 +42,12 @@ import online.visabud.app.visabud_multiplatform.data.Roadmap
 import online.visabud.app.visabud_multiplatform.platform.saveTextFile
 
 @Composable
-fun SavedScreen(paddingValues: PaddingValues) {
+fun SavedScreen(paddingValues: PaddingValues, onRequestOpenSettings: () -> Unit = {}) {
     val scope = rememberCoroutineScope()
     var items by remember { mutableStateOf<List<Roadmap>>(emptyList()) }
     var selected by remember { mutableStateOf<Roadmap?>(null) }
     var previewText by remember { mutableStateOf("") }
+    var showIncompleteDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         items = runCatching { DataModule.roadmaps.list() }.getOrElse { emptyList() }
@@ -65,7 +66,18 @@ fun SavedScreen(paddingValues: PaddingValues) {
         Row(modifier = Modifier
             .fillMaxWidth()
             .padding(16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            FilledTonalButton(onClick = { showGen = true }) {
+            FilledTonalButton(onClick = {
+                scope.launch {
+                    val profile = runCatching { DataModule.profiles.getProfile() }.getOrNull()
+                    val complete = profile?.nationality?.isNotBlank() == true &&
+                            (!profile.education.isNullOrBlank() || profile.workYears != null)
+                    if (complete) {
+                        showGen = true
+                    } else {
+                        showIncompleteDialog = true
+                    }
+                }
+            }) {
                 Icon(Icons.Outlined.Map, contentDescription = null)
                 Text("  Generate Visa Roadmap")
             }
@@ -132,6 +144,25 @@ fun SavedScreen(paddingValues: PaddingValues) {
             title = { Text(selected!!.title, fontWeight = FontWeight.SemiBold) },
             text = {
                 Text(previewText)
+            }
+        )
+    }
+
+    if (showIncompleteDialog) {
+        AlertDialog(
+            onDismissRequest = { showIncompleteDialog = false },
+            confirmButton = {
+                Button(onClick = {
+                    showIncompleteDialog = false
+                    onRequestOpenSettings()
+                }) { Text("Open Settings") }
+            },
+            dismissButton = {
+                TextButton(onClick = { showIncompleteDialog = false }) { Text("Cancel") }
+            },
+            title = { Text("Complete your profile") },
+            text = {
+                Text("Please complete your profile (nationality + education or work years) in Settings to generate roadmaps or checklists.")
             }
         )
     }

@@ -16,6 +16,7 @@ object DataModule {
     var embeddings: EmbeddingRepository = InMemoryEmbeddingRepository(maxEntries = 500)
     var roadmaps: RoadmapRepository = InMemoryRoadmapRepository()
     var chats: ChatRepository = InMemoryChatRepository()
+    var checklists: ChecklistRepository = InMemoryChecklistRepository()
 }
 
 // Allow platform to replace repositories before first use

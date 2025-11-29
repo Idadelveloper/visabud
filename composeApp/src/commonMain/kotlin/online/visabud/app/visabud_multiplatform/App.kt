@@ -7,6 +7,7 @@ import androidx.compose.material.icons.filled.Message
 import androidx.compose.material.icons.outlined.Construction
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.material.icons.outlined.Bookmark
 import androidx.compose.material3.BottomAppBar
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.FloatingActionButton
@@ -107,7 +108,7 @@ private fun MainScreen(initialScreen: MainScreen, onNavigate: (MainScreen) -> Un
                 BottomAppBar {
                     val items = listOf(MainScreen.Home, MainScreen.Saved, MainScreen.Settings)
                     val icons =
-                        listOf(Icons.Outlined.Home, Icons.Outlined.Construction, Icons.Outlined.Settings)
+                        listOf(Icons.Outlined.Home, Icons.Outlined.Bookmark, Icons.Outlined.Settings)
 
                     items.forEachIndexed { index, screen ->
                         NavigationBarItem(
@@ -125,7 +126,7 @@ private fun MainScreen(initialScreen: MainScreen, onNavigate: (MainScreen) -> Un
             MainScreen.Home -> HomeScreen(
                 paddingValues,
                 onNavigateToChat = { currentScreen = MainScreen.Chat })
-            MainScreen.Saved -> SavedScreen(paddingValues)
+            MainScreen.Saved -> SavedScreen(paddingValues, onRequestOpenSettings = { currentScreen = MainScreen.Settings })
             MainScreen.Settings -> SettingsScreen(paddingValues, onOpenProfile = { currentScreen = MainScreen.Profile })
             MainScreen.Chat -> ChatScreen(paddingValues)
             MainScreen.DocumentReview -> DocumentReviewScreen(paddingValues)

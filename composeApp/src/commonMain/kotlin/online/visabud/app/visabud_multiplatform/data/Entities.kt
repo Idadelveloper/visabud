@@ -82,6 +82,18 @@ data class Roadmap(
 )
 
 @Serializable
+data class Checklist(
+    val id: String,
+    val title: String,
+    val destination: String,
+    val visaType: String,
+    val humanText: String,
+    val jsonPayload: String,
+    val createdAt: Long,
+    val updatedAt: Long
+)
+
+@Serializable
 data class ChatMessageEntity(
     val id: String,
     val threadId: String = "default",

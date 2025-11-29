@@ -34,6 +34,13 @@ interface RoadmapRepository {
     suspend fun remove(id: String)
 }
 
+interface ChecklistRepository {
+    suspend fun upsert(checklist: Checklist)
+    suspend fun get(id: String): Checklist?
+    suspend fun list(): List<Checklist>
+    suspend fun remove(id: String)
+}
+
 interface ChatRepository {
     suspend fun addMessage(message: ChatMessageEntity)
     suspend fun listMessages(threadId: String = "default"): List<ChatMessageEntity>
@@ -142,6 +149,15 @@ class InMemoryRoadmapRepository : RoadmapRepository {
     override suspend fun upsert(roadmap: Roadmap) { mutex.withLock { map[roadmap.id] = roadmap } }
     override suspend fun get(id: String): Roadmap? = mutex.withLock { map[id] }
     override suspend fun list(): List<Roadmap> = mutex.withLock { map.values.toList() }
+    override suspend fun remove(id: String) { mutex.withLock { map.remove(id) } }
+}
+
+class InMemoryChecklistRepository : ChecklistRepository {
+    private val mutex = Mutex()
+    private val map = LinkedHashMap<String, Checklist>()
+    override suspend fun upsert(checklist: Checklist) { mutex.withLock { map[checklist.id] = checklist } }
+    override suspend fun get(id: String): Checklist? = mutex.withLock { map[id] }
+    override suspend fun list(): List<Checklist> = mutex.withLock { map.values.sortedByDescending { it.updatedAt } }
     override suspend fun remove(id: String) { mutex.withLock { map.remove(id) } }
 }
 

@@ -22,8 +22,29 @@ data class UserProfile(
     val workYears: Int? = null,
     val languages: String? = null, // comma-separated for MVP
     val finances: String? = null, // low|med|high
+    val passportExpiry: String? = null, // ISO-8601 date string (YYYY-MM-DD)
+    val travelHistory: List<TravelEvent> = emptyList(),
+    val preferences: UserPreferences? = null,
+    val selectedVisaGoals: List<String> = emptyList(),
     val savedDocs: List<String> = emptyList(),
     val lastSeen: Long = 0L
+)
+
+@Serializable
+data class TravelEvent(
+    val countryCode: String, // ISO alpha-2
+    val entryDate: String? = null, // YYYY-MM-DD
+    val exitDate: String? = null,  // YYYY-MM-DD
+    val purpose: String? = null // tourism, study, work, etc.
+)
+
+@Serializable
+data class UserPreferences(
+    val preferredDestinations: List<String> = emptyList(),
+    val budgetLevel: String? = null, // low|medium|high
+    val riskTolerance: String? = null, // low|medium|high
+    val wantsInterviewPrep: Boolean = false,
+    val notificationsEnabled: Boolean = true
 )
 
 @Serializable

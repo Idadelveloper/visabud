@@ -11,9 +11,12 @@ package online.visabud.app.visabud_multiplatform.data
  *   at the app layer before persisting.
  */
 object DataModule {
-    val profiles: ProfileRepository by lazy { InMemoryProfileRepository() }
-    val documents: DocumentRepository by lazy { InMemoryDocumentRepository() }
-    val embeddings: EmbeddingRepository by lazy { InMemoryEmbeddingRepository(maxEntries = 500) }
-    val roadmaps: RoadmapRepository by lazy { InMemoryRoadmapRepository() }
-    val chats: ChatRepository by lazy { InMemoryChatRepository() }
+    var profiles: ProfileRepository = InMemoryProfileRepository()
+    var documents: DocumentRepository = InMemoryDocumentRepository()
+    var embeddings: EmbeddingRepository = InMemoryEmbeddingRepository(maxEntries = 500)
+    var roadmaps: RoadmapRepository = InMemoryRoadmapRepository()
+    var chats: ChatRepository = InMemoryChatRepository()
 }
+
+// Allow platform to replace repositories before first use
+expect fun ensureDataModuleInitialized()

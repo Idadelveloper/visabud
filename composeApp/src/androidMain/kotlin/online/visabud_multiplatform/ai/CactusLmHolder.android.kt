@@ -69,6 +69,23 @@ object CactusLmHolder {
         } catch (_: Throwable) { false }
     }
 
+    // Convenience helpers used by Android-specific code
+    suspend fun generateCompletion(system: String, user: String): String? {
+        ensureReady()
+        val msgs = listOf(
+            com.cactus.ChatMessage(system, "system"),
+            com.cactus.ChatMessage(user, "user")
+        )
+        val res = withLm { it.generateCompletion(msgs) }
+        return res?.response
+    }
+
+    suspend fun generateEmbedding(text: String): List<Double>? {
+        ensureReady()
+        val res = withLm { it.generateEmbedding(text) }
+        return if (res != null && res.success) res.embeddings else null
+    }
+
     fun instance(): CactusLM = lm
 
     fun isLoaded(): Boolean = lm.isLoaded()

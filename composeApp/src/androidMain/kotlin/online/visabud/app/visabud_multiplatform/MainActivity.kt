@@ -16,6 +16,8 @@ class MainActivity : ComponentActivity() {
 
         // Set global context for Android Toasts
         online.visabud.app.visabud_multiplatform.ai.ToastPlatform.appContext = applicationContext
+        // Initialize persistent data repositories
+        online.visabud.app.visabud_multiplatform.data.ensureDataModuleInitialized()
 
         setContent {
             App()

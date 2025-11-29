@@ -42,12 +42,12 @@ kotlin {
         androidMain.dependencies {
             implementation(compose.preview)
             implementation(libs.androidx.activity.compose)
-            // Cactus Kotlin SDK (Android)
-            implementation("com.cactuscompute:cactus:1.0.2-beta")
+            // Cactus Kotlin SDK v1.2 (Android)
+            implementation("com.cactuscompute:cactus:1.2.0-beta")
         }
         iosMain.dependencies {
-            // Cactus Kotlin SDK (iOS)
-            implementation("com.cactuscompute:cactus:1.0.2-beta")
+            // Cactus Kotlin SDK v1.2 (iOS)
+            implementation("com.cactuscompute:cactus:1.2.0-beta")
         }
         commonMain.dependencies {
             implementation(compose.runtime)
@@ -81,6 +81,15 @@ android {
         targetSdk = libs.versions.android.targetSdk.get().toInt()
         versionCode = 1
         versionName = "1.0"
+    }
+    // Also configure ABI splits to avoid generating universal APKs that could install on unsupported ABIs
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("arm64-v8a")
+            isUniversalApk = false
+        }
     }
     packaging {
         resources {

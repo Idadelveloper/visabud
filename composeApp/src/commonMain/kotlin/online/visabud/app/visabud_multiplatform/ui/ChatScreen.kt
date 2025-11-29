@@ -3,6 +3,7 @@ package online.visabud.app.visabud_multiplatform.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.material.icons.Icons
@@ -19,15 +20,57 @@ import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import online.visabud.app.visabud_multiplatform.ai.ChatMsg
+import online.visabud.app.visabud_multiplatform.ai.aiChatClient
 import org.jetbrains.compose.ui.tooling.preview.Preview
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ChatScreen(paddingValues: PaddingValues) {
-    var message by remember { mutableStateOf("") }
+    var input by remember { mutableStateOf("") }
     val sheetState = rememberModalBottomSheetState()
     val scope = rememberCoroutineScope()
     var showBottomSheet by remember { mutableStateOf(false) }
+
+    val messages = remember { mutableStateListOf<ChatMsg>() }
+    var isLoading by remember { mutableStateOf(true) }
+    var isSending by remember { mutableStateOf(false) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    val client = remember { aiChatClient() }
+
+    // Initialize model on first open to start download of local-qwen3-0.6
+    LaunchedEffect(Unit) {
+        try {
+            client.ensureReady()
+            isLoading = false
+        } catch (t: Throwable) {
+            error = t.message ?: "Initialization failed"
+            isLoading = false
+        }
+    }
+
+    fun sendMessage() {
+        val content = input.trim()
+        if (content.isEmpty() || isSending) return
+        input = ""
+        error = null
+        val userMsg = ChatMsg(content = content, role = "user")
+        messages.add(userMsg)
+        isSending = true
+        scope.launch {
+            try {
+                // Ensure model is ready (no-op if already loaded)
+                client.ensureReady()
+                val reply = client.send(messages.toList())
+                messages.add(ChatMsg(content = reply, role = "assistant"))
+            } catch (t: Throwable) {
+                error = t.message ?: "Send failed"
+            } finally {
+                isSending = false
+            }
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -35,6 +78,27 @@ fun ChatScreen(paddingValues: PaddingValues) {
                 .fillMaxSize()
                 .padding(paddingValues)
         ) {
+            // Status banner / error
+            if (isLoading) {
+                LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+            }
+            if (error != null) {
+                AssistChip(onClick = {
+                    // Retry initialize/download when user taps the chip
+                    error = null
+                    scope.launch {
+                        try {
+                            isLoading = true
+                            client.ensureReady()
+                        } catch (t: Throwable) {
+                            error = t.message ?: "Initialization failed"
+                        } finally {
+                            isLoading = false
+                        }
+                    }
+                }, label = { Text(error!!) })
+            }
+
             // Chat messages area
             LazyColumn(
                 modifier = Modifier
@@ -43,9 +107,16 @@ fun ChatScreen(paddingValues: PaddingValues) {
                 verticalArrangement = Arrangement.spacedBy(8.dp),
                 contentPadding = PaddingValues(vertical = 16.dp)
             ) {
-                // TODO: Replace with actual chat messages
-                items(5) {
-                    Text("Sample message $it", modifier = Modifier.padding(8.dp))
+                items(messages) { msg ->
+                    val bg = if (msg.role == "user") MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.secondaryContainer
+                    val onBg = if (msg.role == "user") MaterialTheme.colorScheme.onPrimaryContainer else MaterialTheme.colorScheme.onSecondaryContainer
+                    Surface(color = bg, shape = RoundedCornerShape(12.dp)) {
+                        Text(
+                            text = msg.content,
+                            color = onBg,
+                            modifier = Modifier.padding(12.dp)
+                        )
+                    }
                 }
             }
 
@@ -62,7 +133,7 @@ fun ChatScreen(paddingValues: PaddingValues) {
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
                     // Attachment button
-                    IconButton(onClick = { showBottomSheet = true }) {
+                    IconButton(onClick = { showBottomSheet = true }, enabled = !isSending) {
                         Icon(Icons.Default.Add, contentDescription = "Attach File")
                     }
 
@@ -79,15 +150,15 @@ fun ChatScreen(paddingValues: PaddingValues) {
                         contentAlignment = Alignment.CenterStart
                     ) {
                         BasicTextField(
-                            value = message,
-                            onValueChange = { message = it },
+                            value = input,
+                            onValueChange = { input = it },
                             modifier = Modifier.fillMaxWidth(),
                             textStyle = LocalTextStyle.current.copy(
                                 color = MaterialTheme.colorScheme.onSurface
                             ),
                             cursorBrush = SolidColor(MaterialTheme.colorScheme.onSurface),
                             decorationBox = { innerTextField ->
-                                if (message.isEmpty()) {
+                                if (input.isEmpty()) {
                                     Text("Type a message...", color = MaterialTheme.colorScheme.onSurfaceVariant)
                                 }
                                 innerTextField()
@@ -97,8 +168,8 @@ fun ChatScreen(paddingValues: PaddingValues) {
 
                     // Send button
                     IconButton(
-                        onClick = { /* TODO: Send message */ },
-                        enabled = message.isNotBlank()
+                        onClick = { sendMessage() },
+                        enabled = input.isNotBlank() && !isSending
                     ) {
                         Icon(Icons.Default.Send, contentDescription = "Send")
                     }

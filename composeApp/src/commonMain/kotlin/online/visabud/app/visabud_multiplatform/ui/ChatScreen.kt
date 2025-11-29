@@ -59,6 +59,8 @@ fun ChatScreen(paddingValues: PaddingValues) {
 
     // Snackbar host for toast-like messages on all platforms
     val snackbarHostState = remember { SnackbarHostState() }
+    // Show a visible progress bar while the local model is downloading
+    var isDownloading by remember { mutableStateOf(false) }
 
     // Local AI client (Android/iOS use Cactus; web shows stub)
     val client = remember { aiChatClient() }
@@ -75,6 +77,7 @@ fun ChatScreen(paddingValues: PaddingValues) {
             val alreadyDownloaded = client.isModelDownloaded()
             if (!alreadyDownloaded) {
                 // Only notify if we are about to download
+                isDownloading = true
                 showToast("Downloading model…")
                 snackbarHostState.showSnackbar("Model download started")
             }
@@ -85,6 +88,8 @@ fun ChatScreen(paddingValues: PaddingValues) {
             }
         } catch (e: Throwable) {
             snackbarHostState.showSnackbar("Failed to init model: ${e.message ?: "unknown"}")
+        } finally {
+            isDownloading = false
         }
     }
 
@@ -136,19 +141,31 @@ fun ChatScreen(paddingValues: PaddingValues) {
             )
         }
     ) { innerPadding ->
-        LazyColumn(
-            state = listState,
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
-            contentPadding = PaddingValues(16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(innerPadding)
         ) {
-            items(messages) { msg ->
-                MessageBubble(msg)
+            if (isDownloading) {
+                Column(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 8.dp)) {
+                    LinearProgressIndicator(modifier = Modifier.fillMaxWidth())
+                    Text("Downloading local model…", style = MaterialTheme.typography.labelMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                }
             }
-            if (isVisaBudTyping) {
-                item { TypingIndicator() }
+            LazyColumn(
+                state = listState,
+                modifier = Modifier
+                    .weight(1f)
+                    .fillMaxWidth(),
+                contentPadding = PaddingValues(16.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                items(messages) { msg ->
+                    MessageBubble(msg)
+                }
+                if (isVisaBudTyping) {
+                    item { TypingIndicator() }
+                }
             }
         }
 

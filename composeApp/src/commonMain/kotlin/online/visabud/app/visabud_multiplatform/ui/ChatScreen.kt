@@ -111,25 +111,9 @@ fun ChatScreen(paddingValues: PaddingValues) {
                     isVisaBudTyping = true
                     scope.launch {
                         try {
-                            // Build chat history for the model
-                            val history: List<ChatMsg> = messages.map {
-                                val role = if (it.sender == Sender.USER) "user" else "assistant"
-                                ChatMsg(content = it.text, role = role)
-                            }
-                            // Streaming assistant reply
-                            val placeholderIndex = messages.size
-                            messages.add(ChatMessage(text = "", sender = Sender.VISABUD))
-                            val finalText = client.sendStreaming(history) { token ->
-                                // append token to the last assistant message
-                                if (messages.size > placeholderIndex) {
-                                    val current = messages[placeholderIndex]
-                                    messages[placeholderIndex] = current.copy(text = current.text + token)
-                                }
-                            }
-                            // Ensure final text is set (in case no streaming tokens were emitted)
-                            if (messages[placeholderIndex].text.isBlank()) {
-                                messages[placeholderIndex] = messages[placeholderIndex].copy(text = finalText)
-                            }
+                            // Route through ChatAgent so replies are natural language (no raw JSON)
+                            val reply = online.visabud.app.visabud_multiplatform.ai.ChatAgent.handleUserMessage(userText)
+                            messages.add(ChatMessage(text = reply.replyText, sender = Sender.VISABUD))
                         } catch (e: Throwable) {
                             snackbarHostState.showSnackbar("Chat failed: ${e.message ?: "unknown error"}")
                         } finally {
@@ -244,18 +228,9 @@ fun ChatScreen(paddingValues: PaddingValues) {
                                     val role = if (it.sender == Sender.USER) "user" else "assistant"
                                     ChatMsg(content = it.text, role = role)
                                 }
-                                // Stream the assistant reply after upload
-                                val placeholder = messages.size
-                                messages.add(ChatMessage(text = "", sender = Sender.VISABUD))
-                                val finalText = client.sendStreaming(history) { token ->
-                                    if (messages.size > placeholder) {
-                                        val current = messages[placeholder]
-                                        messages[placeholder] = current.copy(text = current.text + token)
-                                    }
-                                }
-                                if (messages[placeholder].text.isBlank()) {
-                                    messages[placeholder] = messages[placeholder].copy(text = finalText)
-                                }
+                                // Ask ChatAgent to handle the user note and return a readable reply
+                                val agentReply = online.visabud.app.visabud_multiplatform.ai.ChatAgent.handleUserMessage(userNote)
+                                messages.add(ChatMessage(text = agentReply.replyText, sender = Sender.VISABUD))
                                 snackbarHostState.showSnackbar("Document processed.")
                             } catch (e: Throwable) {
                                 snackbarHostState.showSnackbar("Upload failed: ${e.message ?: "unknown"}")
